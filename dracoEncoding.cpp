@@ -4,6 +4,7 @@
 #include <cstdlib>
 #include <vector>
 #include <sstream>
+#include <array>
 // https://stackoverflow.com/questions/62313136/how-to-include-the-draco-dec-library
 // g++ dracoEncoding.cpp -I /groups/scicompsoft/home/ackermand/local/include/ -L /groups/scicompsoft/home/ackermand/local/lib/ -ldraco -o convertToQuantizedDracoMesh
 
@@ -11,8 +12,8 @@ using Vector3d = std::array<float,3>;//std::array<int64_t, 3>;
 using VertexCoord = std::uint32_t;
 
 struct MinAndMaxPositions{
-	int [3] minimum;
-	int [3] maximum;
+	int minimum[3];
+	int maximum[3];
 };
 
 
@@ -28,31 +29,16 @@ struct Mesh{
 
 class MeshSubdivider{
 	//"""A class to read, write and split meshes"""
-	std::string filename, output_dir;
+	const std::string *filename, *output_dir;
 	int level, maximum_level;
-	MinAndMaxPositions minAndMaxPositions;
+  int *minimum, *maximum;
   	
-  	def __init__(self, filename, output_dir, level, maximum_level, minAndMaxPositions):
-  	public:
-   	 MeshSubdivider (std::string, std::string, int, int, MinAndMaxPositions);
-}
-
-MeshSubdivider::MeshSubdivider(std::string filename, std::string output_dir, int level, int maximum_level, MinAndMaxPositions minAndMaxPositions){
-	filename = filename;
-	output_dir = output_dir;
-	level = level;
-	maximum_level = level;
-	minAndMaxPositions = minAndMaxPositions;
-}
-
-
-Mesh ReadObjFile(std::string &directory, Vector3d &fragment_shape, int *fragment_position){
-  std::string filename=directory;
-  for(int d=0; d<3; d++){
-    filename+= std::to_string(fragment_position[d]);
-  }
-  filename+=".obj";
-  std::ifstream myfile (filename);
+  public:
+   	 MeshSubdivider (const std::string *, const std::string *, int, int, MinAndMaxPositions);
+};
+std::map<Vector3,int> mymap;
+Mesh ReadObjFile(const std::string * filename){
+  std::ifstream myfile (*filename);
   std::string line;
 
   std::vector<std::vector<float>> vertices;
@@ -86,16 +72,22 @@ Mesh ReadObjFile(std::string &directory, Vector3d &fragment_shape, int *fragment
       }
   }
 
-  Vector3d input_origin = {0,0,0};
-  Vector3d fragment_origin = {0,0,0};
-
-  for (int d=0; d<3; d++){
-    fragment_origin[d] = fragment_shape[d]*fragment_position[d];
-  }
-
-  Mesh mesh = {vertices,faces, fragment_origin, fragment_shape, input_origin};
+  Mesh mesh = {vertices,faces};
+  std::cout<<vertices.size();
   return mesh;
 }
+
+MeshSubdivider::MeshSubdivider(const std::string * filename, const std::string * output_dir, int level, int maximum_level, MinAndMaxPositions minAndMaxPositions){
+  this->filename = filename;
+  this->output_dir = output_dir;
+  this->level = level;
+  this->maximum_level = level;
+  this->minimum = minAndMaxPositions.minimum;
+  this->maximum = minAndMaxPositions.maximum;
+
+  Mesh original_mesh = ReadObjFile(this->filename);
+};
+
 /*
 void SubdivideMesh(std::string & directory, Vector3d & fragment_shape, int * fragment_position){
   Mesh mesh = ReadObjFile(directory,fragment_shape, fragment_position);
@@ -146,10 +138,10 @@ void SubdivideMesh(std::string & directory, Vector3d & fragment_shape, int * fra
 
 int main(int argc, char ** argv){
 
-  std::string directory = argv[1];
-  Vector3d fragment_shape = {std::strtof(argv[2],NULL),std::strtof(argv[3],NULL),std::strtof(argv[4],NULL)};
-  int fragment_position[3]= {std::atoi(argv[5]),std::atoi(argv[6]),std::atoi(argv[7])};
-  ConvertToDracoMeshWithPreQuantization(directory, fragment_shape, fragment_position);
+  std::string input_directory = argv[1];
+  //Vector3d fragment_shape = {std::strtof(argv[2],NULL),std::strtof(argv[3],NULL),std::strtof(argv[4],NULL)};
+  //int fragment_position[3]= {std::atoi(argv[5]),std::atoi(argv[6]),std::atoi(argv[7])};
+  ReadObjFile(&input_directory);
     
   return 1;
 }

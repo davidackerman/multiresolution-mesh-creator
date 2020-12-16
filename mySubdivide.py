@@ -94,18 +94,18 @@ class MeshSubdivider:
 		return avg
 	
 	def add_vertex(self, vertex):
-		#if vertex not in self.mesh_s0.vertices:
-		#	self.mesh_s0.vertices.append(vertex)
-		#return self.mesh_s0.vertices.index(vertex)
-		self.mesh_s0.vertices.append(vertex)
-		return len(self.mesh_s0.vertices)-1
+		if vertex not in self.mesh_s0.vertices:
+			self.mesh_s0.vertices.append(vertex)
+		return self.mesh_s0.vertices.index(vertex)
+		#self.mesh_s0.vertices.append(vertex)
+		#return len(self.mesh_s0.vertices)-1
 
 	def add_face(self, face):
-		#if face not in self.mesh_s0.faces:
+		if face not in self.mesh_s0.faces:
 			self.mesh_s0.faces.append(face)
 
 	def split_face_in_two(self, face, vertices, dimension, is_on_border, grid_locations):
-		#remove face
+		#remove facef
 		#print("split two")
 		self.mesh_s0.faces.remove(face)
 
@@ -154,22 +154,22 @@ class MeshSubdivider:
 			intermediate_vertex_id = self.add_vertex(intermediate_vertex)
 			intermediate_vertex_ids.append(intermediate_vertex_id)
 
-			# if take_average:
-			# 	#need to split edge that this touches so that all vertices are part of at least 3 triangles
-			# 	vertex_ids = [face[current_ids_to_split[0]], face[current_ids_to_split[1] ] ]
-			# 	matched = False
-			# 	for f in self.mesh_s0.faces:
-			# 		if vertex_ids[0] in f and vertex_ids[1] in f: #then this face needs to be split
-			# 			self.mesh_s0.faces.remove(f)
-			# 			point_opposite_edge = [index for index,p in enumerate(f) if p not in [vertex_ids[0], vertex_ids[1]]][0]
-			# 			connects_to = [1,2,0]
-			# 			preceeded_by = [2, 0, 1]
-			# 			self.add_face( ( f[connects_to[point_opposite_edge] ], intermediate_vertex_id, f[point_opposite_edge] ) )
-			# 			self.add_face( ( f[point_opposite_edge], intermediate_vertex_id, f[ preceeded_by[point_opposite_edge]] ) )
-			# 			matched = True
-			# 			break
-				#if matched==False:
-					#print("failed")
+			if take_average:
+				#need to split edge that this touches so that all vertices are part of at least 3 triangles
+				vertex_ids = [face[current_ids_to_split[0]], face[current_ids_to_split[1] ] ]
+				matched = False
+				for f in self.mesh_s0.faces:
+					if vertex_ids[0] in f and vertex_ids[1] in f: #then this face needs to be split
+						self.mesh_s0.faces.remove(f)
+						point_opposite_edge = [index for index,p in enumerate(f) if p not in [vertex_ids[0], vertex_ids[1]]][0]
+						connects_to = [1,2,0]
+						preceeded_by = [2, 0, 1]
+						self.add_face( ( f[connects_to[point_opposite_edge] ], intermediate_vertex_id, f[point_opposite_edge] ) )
+						self.add_face( ( f[point_opposite_edge], intermediate_vertex_id, f[ preceeded_by[point_opposite_edge]] ) )
+						matched = True
+						break
+				if matched==False:
+					print("failed")
 
 
 			#print(f"{take_average} {intermediate_vertex}")
@@ -258,10 +258,10 @@ class MeshSubdivider:
 			grid_indices = self.get_grid_indices_for_face_vertices(vertices)
 			for vertex in vertices:
 				#commented out some stuff here cuz duplicating faces is much faster than checking if vertices are present, and use another code to compress anyway
-				#if vertex not in self.octree_meshes[grid_indices].vertices:
-				self.octree_meshes[grid_indices].vertices.append(vertex)
-				#vertex_id = self.octree_meshes[grid_indices].vertices.index(vertex)
-				face_in_mesh.append(len(self.octree_meshes[grid_indices].vertices)-1)
+				if vertex not in self.octree_meshes[grid_indices].vertices:
+					self.octree_meshes[grid_indices].vertices.append(vertex)
+				vertex_id = self.octree_meshes[grid_indices].vertices.index(vertex)
+				face_in_mesh.append(vertex_id)
 			self.octree_meshes[grid_indices].faces.append(face_in_mesh)
 
 		print("Split mesh complete")
@@ -282,8 +282,6 @@ class MeshSubdivider:
 		#		outfile.write(f"v {vertex[0]} {vertex[1]} {vertex[2]}\n")
 		#	for face in self.mesh_s0.faces:
 		#		outfile.write(f"f {face[0]+1} {face[1]+1} {face[2]+1}\n") #add one for obj file
-		chunk_shape = [14031.0, 1584.0, 5555.0]
-		current_chunk_shape = [chunk_shape[d]/(2**self.level) for d in range(0,3)]
 		for key in self.octree_meshes.keys():
 			with open(f"{self.output_dir}/{key}.obj", 'w') as outfile:
 				for vertex in self.octree_meshes[key].vertices:
@@ -331,11 +329,11 @@ minAndMaxPositions = get_min_and_max("test/mito_obj_meshes_s", [0,1,2], "3458098
 mesh_subdivider = MeshSubdivider("test/mito_obj_meshes_s2/345809856042.obj","test/mySubdivide/s2",0,2, minAndMaxPositions) 
 mesh_subdivider.octree_subdivision()
 
-mesh_subdivider = MeshSubdivider("test/mito_obj_meshes_s1/345809856042.obj","test/mySubdivide/s1",1,2, minAndMaxPositions) 
-mesh_subdivider.octree_subdivision()
+#mesh_subdivider = MeshSubdivider("test/mito_obj_meshes_s1/345809856042.obj","test/mySubdivide/s1",1,2, minAndMaxPositions) 
+#mesh_subdivider.octree_subdivision()
 
-mesh_subdivider = MeshSubdivider("test/mito_obj_meshes_s0/345809856042.obj","test/mySubdivide/s0",2,2, minAndMaxPositions)
-mesh_subdivider.octree_subdivision()
+#mesh_subdivider = MeshSubdivider("test/mito_obj_meshes_s0/345809856042.obj","test/mySubdivide/s0",2,2, minAndMaxPositions)
+#mesh_subdivider.octree_subdivision()
 
 print(mesh_subdivider.minimum)
 print(mesh_subdivider.maximum)
