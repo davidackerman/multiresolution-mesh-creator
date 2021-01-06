@@ -231,7 +231,7 @@ void ConvertToDracoMeshWithPreQuantization(std::string & directory, Vector3d & f
   draco::TriangleSoupMeshBuilder mb;
   using VertexCoord = std::uint32_t;
 
-  int num_triangles = mesh.vertices.size();
+  int num_triangles = mesh.faces.size();
   if(num_triangles>0){
     mb.Start(num_triangles);
     int position_att_id = mb.AddAttribute(draco::GeometryAttribute::POSITION, 3, draco::DT_UINT32);
@@ -243,7 +243,7 @@ void ConvertToDracoMeshWithPreQuantization(std::string & directory, Vector3d & f
           int face_index = face.at(i) -1;
           points[i] = quantizer(mesh.vertices.at( face_index ));
         }
-
+      
         mb.SetAttributeValuesForFace(position_att_id, draco::FaceIndex(face_index),
                                        &points[0], &points[1], &points[2]);
         face_index++;

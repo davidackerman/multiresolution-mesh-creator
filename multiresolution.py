@@ -14,7 +14,7 @@ def cmp_zorder(lhs, rhs) -> bool:
     # Will contain the most significant dimension.
     msd = 2
     # Loop over the other dimensions.
-    for dim in range(1, len(lhs)):
+    for dim in [1, 0]:#len(lhs)):
         # Check if the current dimension is more significant
         # by comparing the most significant bits.
         if less_msb(lhs[msd] ^ rhs[msd], lhs[dim] ^ rhs[dim]):
@@ -74,6 +74,7 @@ fragments_per_lod = []
 cat_command = "cat"
 for lod in lods:
 	ordered_fragments = get_fragment_order(int(num_divisions_per_dimension_lod0/(2**lod)))
+	print(ordered_fragments)
 	scale = lod
 	fragments_that_exist = []
 	fragment_directory = f"test/mySubdivide/s{scale}/"
