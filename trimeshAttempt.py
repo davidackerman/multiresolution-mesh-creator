@@ -4,6 +4,7 @@ import struct
 import json
 import numpy as np
 import tempfile
+import subprocess
 
 from functools import cmp_to_key
 
@@ -48,13 +49,13 @@ def generate_mesh_decomposition(verts, faces, nodes_per_dim, bits):
     
     # create submeshes. 
     if nodes_per_dim == 1:
-        quantize = Quantize(
-                    fragment_origin=np.array([0, 0, 0]), 
-                    fragment_shape=np.array([1, 1, 1]), 
-                    input_origin=np.array([0,0,0]), 
-                    quantization_bits=bits
-        )
-        mesh.vertices = quantize(mesh.vertices)
+        #quantize = Quantize(
+        #            fragment_origin=np.array([0, 0, 0]), 
+        #            fragment_shape=np.array([1, 1, 1]), 
+        #            input_origin=np.array([0,0,0]), 
+        #            quantization_bits=bits
+        #)
+        #mesh.vertices = quantize(mesh.vertices)
         return [[0,0,0]], [mesh]
 
     submeshes = []
@@ -70,15 +71,15 @@ def generate_mesh_decomposition(verts, faces, nodes_per_dim, bits):
                 mesh_z = trimesh.intersections.slice_mesh_plane(mesh_z, plane_normal=-nxy, plane_origin=nxy*(z+1))
                 
                 # Initialize Quantizer.
-                quantize = Quantize(
-                    fragment_origin=np.array([x, y, z]), 
-                    fragment_shape=np.array([1, 1, 1]), 
-                    input_origin=np.array([0,0,0]), 
-                    quantization_bits=bits
-                )
+                #quantize = Quantize(
+                #    fragment_origin=np.array([x, y, z]), 
+                #    fragment_shape=np.array([1, 1, 1]), 
+                #    input_origin=np.array([0,0,0]), 
+                #    quantization_bits=bits
+                #)
     
                 if len(mesh_z.vertices) > 0:
-                    mesh_z.vertices = quantize(mesh_z.vertices)
+                    #mesh_z.vertices = quantize(mesh_z.vertices)
                     submeshes.append(mesh_z)
                     nodes.append([x,y,z])
     
@@ -87,18 +88,23 @@ def generate_mesh_decomposition(verts, faces, nodes_per_dim, bits):
             
     return nodes, submeshes
 
-def my_export_draco(mesh, bits=quantization_bits):
-    with tempfile.NamedTemporaryFile(suffix='.ply') as temp_ply:
-        temp_ply.write(export_ply(mesh))
-        temp_ply.flush()
+def my_export_draco(mesh, fragment_origin):
+    with tempfile.NamedTemporaryFile(suffix='.obj') as temp_obj:
+        mesh.export(temp_obj.name)
         with tempfile.NamedTemporaryFile(suffix='.drc') as encoded:
-            subprocess.check_output([draco_encoder_custom,
-                                     '-qp',
-                                     str(int(bits)),
-                                     '-i',
-                                     temp_ply.name,
-                                     '-o',
-                                     encoded.name])
+            try:
+                subprocess.check_output(f"./dracoC/draco_encoder_custom \
+                                         {temp_obj.name} \
+                                         {encoded.name} \
+                                         {str(fragment_origin[0])} \
+                                         {str(fragment_origin[1])} \
+                                         {str(fragment_origin[2])} \
+                                         ", 
+                                         shell=True,
+                                         stderr=subprocess.STDOUT)
+
+            except subprocess.CalledProcessError as e:
+                raise RuntimeError("command '{}' return with error (code {}): {}".format(e.cmd, e.returncode, e.output))
             encoded.seek(0)
             data = encoded.read()
     return data
@@ -133,8 +139,8 @@ if __name__ == "__main__":
             lod_offsets = []
             nodes, submeshes = generate_mesh_decomposition(verts.copy(), faces.copy(), nodes_per_dim, quantization_bits)
             
-            for mesh in submeshes:
-                draco = trimesh.exchange.ply.export_draco(mesh, bits=quantization_bits)
+            for node,mesh in zip(nodes,submeshes):
+                draco = my_export_draco(mesh, node)
                 f.write(draco)
                 lod_offsets.append(len(draco))
             
