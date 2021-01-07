@@ -7,17 +7,7 @@ import tempfile
 import subprocess
 
 from functools import cmp_to_key
-
-
-class Quantize():
-    def __init__(self, fragment_origin, fragment_shape, input_origin, quantization_bits):
-        self.upper_bound = np.iinfo(np.uint32).max >> (np.dtype(np.uint32).itemsize*8 - quantization_bits)
-        self.scale = self.upper_bound / fragment_shape
-        self.offset = input_origin - fragment_origin + 0.5/self.scale
-    
-    def __call__(self, v_pos):
-        output = np.minimum(self.upper_bound, np.maximum(0, self.scale*(v_pos + self.offset))).astype(np.uint32)
-        return output
+from math import floor
 
 def cmp_zorder(lhs, rhs) -> bool:
     def less_msb(x: int, y: int) -> bool:
@@ -38,7 +28,18 @@ def cmp_zorder(lhs, rhs) -> bool:
 def less_msb(x: int, y: int) -> bool:
     return x < y and x < (x ^ y)
 
-def generate_mesh_decomposition(verts, faces, nodes_per_dim, bits):
+def append_to_submeshes(submeshes, nodes, mesh, node):
+
+    if node not in nodes:
+        nodes.append(node)
+        submeshes.append(mesh)
+    else:
+        idx = nodes.index(node)
+        submeshes[idx] = trimesh.util.concatenate( [ submeshes[idx], mesh ]);
+
+    return nodes, submeshes
+
+def generate_mesh_decomposition(verts, faces, nodes_per_dim, max_nodes_per_dim):
     # Scale our coordinates.
     scale = nodes_per_dim/(verts.max(axis=0) - verts.min(axis=0))
     verts_scaled = scale*(verts - verts.min(axis=0))
@@ -46,46 +47,29 @@ def generate_mesh_decomposition(verts, faces, nodes_per_dim, bits):
     # Define plane normals and create a trimesh object.
     nyz, nxz, nxy = np.eye(3)
     mesh = trimesh.Trimesh(vertices=verts_scaled, faces=faces)
-    
-    # create submeshes. 
-    if nodes_per_dim == 1:
-        #quantize = Quantize(
-        #            fragment_origin=np.array([0, 0, 0]), 
-        #            fragment_shape=np.array([1, 1, 1]), 
-        #            input_origin=np.array([0,0,0]), 
-        #            quantization_bits=bits
-        #)
-        #mesh.vertices = quantize(mesh.vertices)
-        return [[0,0,0]], [mesh]
 
     submeshes = []
     nodes = []
-    for x in range(0, nodes_per_dim):
-        mesh_x = trimesh.intersections.slice_mesh_plane(mesh, plane_normal=nyz, plane_origin=nyz*x)
-        mesh_x = trimesh.intersections.slice_mesh_plane(mesh_x, plane_normal=-nyz, plane_origin=nyz*(x+1))
-        for y in range(0, nodes_per_dim):
-            mesh_y = trimesh.intersections.slice_mesh_plane(mesh_x, plane_normal=nxz, plane_origin=nxz*y)
-            mesh_y = trimesh.intersections.slice_mesh_plane(mesh_y, plane_normal=-nxz, plane_origin=nxz*(y+1))
-            for z in range(0, nodes_per_dim):
-                mesh_z = trimesh.intersections.slice_mesh_plane(mesh_y, plane_normal=nxy, plane_origin=nxy*z)
-                mesh_z = trimesh.intersections.slice_mesh_plane(mesh_z, plane_normal=-nxy, plane_origin=nxy*(z+1))
+    ratio = nodes_per_dim/max_nodes_per_dim
+    for x in range(0, max_nodes_per_dim):
+        mesh_x = trimesh.intersections.slice_mesh_plane(mesh, plane_normal=nyz, plane_origin=nyz*x*ratio)
+        mesh_x = trimesh.intersections.slice_mesh_plane(mesh_x, plane_normal=-nyz, plane_origin=nyz*(x+1)*ratio)
+        for y in range(0, max_nodes_per_dim):
+            mesh_y = trimesh.intersections.slice_mesh_plane(mesh_x, plane_normal=nxz, plane_origin=nxz*y*ratio)
+            mesh_y = trimesh.intersections.slice_mesh_plane(mesh_y, plane_normal=-nxz, plane_origin=nxz*(y+1)*ratio)
+            for z in range(0, max_nodes_per_dim):
+                mesh_z = trimesh.intersections.slice_mesh_plane(mesh_y, plane_normal=nxy, plane_origin=nxy*z*ratio)
+                mesh_z = trimesh.intersections.slice_mesh_plane(mesh_z, plane_normal=-nxy, plane_origin=nxy*(z+1)*ratio)
                 
-                # Initialize Quantizer.
-                #quantize = Quantize(
-                #    fragment_origin=np.array([x, y, z]), 
-                #    fragment_shape=np.array([1, 1, 1]), 
-                #    input_origin=np.array([0,0,0]), 
-                #    quantization_bits=bits
-                #)
-    
-                if len(mesh_z.vertices) > 0:
-                    #mesh_z.vertices = quantize(mesh_z.vertices)
-                    submeshes.append(mesh_z)
-                    nodes.append([x,y,z])
+                if len(mesh_z.vertices) > 0:                    
+                    node = [floor(node_position*nodes_per_dim/max_nodes_per_dim) for node_position in [x,y,z]]
+                    nodes, submeshes = append_to_submeshes(submeshes, nodes, mesh_z, node )
+                    #submeshes.append(mesh_z)
+                    #nodes.append([x,y,z])
     
     # Sort in Z-curve order
     submeshes, nodes = zip(*sorted(zip(submeshes, nodes), key=cmp_to_key(lambda x, y: cmp_zorder(x[1], y[1]))))
-            
+    print(len(submeshes))
     return nodes, submeshes
 
 def my_export_draco(mesh, fragment_origin):
@@ -137,7 +121,7 @@ if __name__ == "__main__":
             faces = mesh.faces
 
             lod_offsets = []
-            nodes, submeshes = generate_mesh_decomposition(verts.copy(), faces.copy(), nodes_per_dim, quantization_bits)
+            nodes, submeshes = generate_mesh_decomposition(verts.copy(), faces.copy(), nodes_per_dim, max(lod_scales))
             
             for node,mesh in zip(nodes,submeshes):
                 draco = my_export_draco(mesh, node)
