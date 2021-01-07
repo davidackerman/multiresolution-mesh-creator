@@ -3,6 +3,7 @@ import trimesh
 import struct
 import json
 import numpy as np
+import tempfile
 
 from functools import cmp_to_key
 
@@ -47,6 +48,13 @@ def generate_mesh_decomposition(verts, faces, nodes_per_dim, bits):
     
     # create submeshes. 
     if nodes_per_dim == 1:
+        quantize = Quantize(
+                    fragment_origin=np.array([0, 0, 0]), 
+                    fragment_shape=np.array([1, 1, 1]), 
+                    input_origin=np.array([0,0,0]), 
+                    quantization_bits=bits
+        )
+        mesh.vertices = quantize(mesh.vertices)
         return [[0,0,0]], [mesh]
 
     submeshes = []
@@ -71,7 +79,6 @@ def generate_mesh_decomposition(verts, faces, nodes_per_dim, bits):
     
                 if len(mesh_z.vertices) > 0:
                     mesh_z.vertices = quantize(mesh_z.vertices)
-                
                     submeshes.append(mesh_z)
                     nodes.append([x,y,z])
     
@@ -80,10 +87,26 @@ def generate_mesh_decomposition(verts, faces, nodes_per_dim, bits):
             
     return nodes, submeshes
 
+def my_export_draco(mesh, bits=quantization_bits):
+    with tempfile.NamedTemporaryFile(suffix='.ply') as temp_ply:
+        temp_ply.write(export_ply(mesh))
+        temp_ply.flush()
+        with tempfile.NamedTemporaryFile(suffix='.drc') as encoded:
+            subprocess.check_output([draco_encoder_custom,
+                                     '-qp',
+                                     str(int(bits)),
+                                     '-i',
+                                     temp_ply.name,
+                                     '-o',
+                                     encoded.name])
+            encoded.seek(0)
+            data = encoded.read()
+    return data
+
 if __name__ == "__main__":
 
     quantization_bits = 10
-    lods = np.array([0, 1 , 2])
+    lods = np.array([0, 1, 2])
 
     mesh = trimesh.load(f'test/mito_obj_meshes_s2/345809856042.obj')
     verts = mesh.vertices
@@ -99,16 +122,16 @@ if __name__ == "__main__":
     fragment_offsets = []
     fragment_positions = []
     with open('test/multiresolutionTrimesh/345809856042', 'wb') as f:
-        for lod in lods[::-1]:
+        for lod in lods:
             scale = lod_scales[lod]
-            #nodes_per_dim = 2**(max(lods)-lod)
+            nodes_per_dim = 2**(max(lods)-lod)
 
             mesh = trimesh.load(f'test/mito_obj_meshes_s{lod}/345809856042.obj')
             verts = mesh.vertices
             faces = mesh.faces
 
             lod_offsets = []
-            nodes, submeshes = generate_mesh_decomposition(verts.copy(), faces.copy(), scale, quantization_bits)
+            nodes, submeshes = generate_mesh_decomposition(verts.copy(), faces.copy(), nodes_per_dim, quantization_bits)
             
             for mesh in submeshes:
                 draco = trimesh.exchange.ply.export_draco(mesh, bits=quantization_bits)
