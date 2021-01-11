@@ -37,7 +37,7 @@ struct Quantizer {
   //     while a value of `2**num_quantization_bits-1` corresponds to
   //     `fragment_origin[i]+fragment_shape[i]`.  Should be less than or equal
   //     to the number of bits in `VertexCoord`.
-  Quantizer(const Vector3d& fragment_origin, const Vector3d& fragment_shape,
+  Quantizer(const int* fragment_origin, const Vector3d& fragment_shape,
             const Vector3d& input_origin, int num_quantization_bits) {
     for (int i = 0; i < 3; ++i) {
       upper_bound[i] =
@@ -68,19 +68,10 @@ struct Quantizer {
 struct Mesh{
   std::vector<std::vector<float>> vertices;
   std::vector<std::vector<int>> faces;
-
-  Vector3d fragment_origin;
-  Vector3d fragment_shape;
-  Vector3d input_origin;
 };
 
-Mesh ReadObjFile(std::string &directory, Vector3d &fragment_shape, int *fragment_position){
-  std::string filename=directory;
-  for(int d=0; d<3; d++){
-    filename+= std::to_string(fragment_position[d]);
-  }
-  filename+=".obj";
-  std::ifstream myfile (filename);
+Mesh ReadObjFile(std::string & input_file){
+  std::ifstream myfile (input_file);
   std::string line;
 
   std::vector<std::vector<float>> vertices;
@@ -114,22 +105,18 @@ Mesh ReadObjFile(std::string &directory, Vector3d &fragment_shape, int *fragment
       }
   }
 
-  Vector3d input_origin = {0,0,0};
-  Vector3d fragment_origin = {0,0,0};
-
-  for (int d=0; d<3; d++){
-    fragment_origin[d] = fragment_shape[d]*fragment_position[d];
-  }
-
-  Mesh mesh = {vertices,faces, fragment_origin, fragment_shape, input_origin};
+  Mesh mesh = {vertices,faces};
   return mesh;
 }
 
-void ConvertToDracoMeshWithPreQuantization(std::string & directory, Vector3d & fragment_shape, int * fragment_position){
-  Mesh mesh = ReadObjFile(directory,fragment_shape, fragment_position);
-
+void ConvertToDracoMeshWithPreQuantization(std::string & input_file, std::string & output_file, int * fragment_origin){
+  Mesh mesh = ReadObjFile(input_file);
   int num_quantization_bits = 10;
-  Quantizer quantizer(mesh.fragment_origin, mesh.fragment_shape, mesh.input_origin, num_quantization_bits);
+
+  Vector3d fragment_shape = {1,1,1};
+  Vector3d input_origin = {0,0,0};
+  Quantizer quantizer(fragment_origin, fragment_shape,
+                                     input_origin, num_quantization_bits);
 
   draco::TriangleSoupMeshBuilder mb;
   using VertexCoord = std::uint32_t;
@@ -159,24 +146,19 @@ void ConvertToDracoMeshWithPreQuantization(std::string & directory, Vector3d & f
     encoder.SetAttributePredictionScheme(draco::GeometryAttribute::POSITION,
                                          draco::MESH_PREDICTION_PARALLELOGRAM);
     auto draco_status = encoder.EncodeMeshToBuffer(*draco_mesh, &eb);
-    
-    std::string output_filename=directory;
-    for(int d=0; d<3; d++){
-      output_filename+= std::to_string(fragment_position[d]);
-    }
-    output_filename+=".drc";
+       
     draco::FileWriterFactory::RegisterWriter(draco::StdioFileWriter::Open);
-    draco::WriteBufferToFile(eb.data(), eb.size(), output_filename);
+    draco::WriteBufferToFile(eb.data(), eb.size(), output_file);
   }
 
 }
 
 int main(int argc, char ** argv){
 
-  std::string directory = argv[1];
-  Vector3d fragment_shape = {std::strtof(argv[2],NULL),std::strtof(argv[3],NULL),std::strtof(argv[4],NULL)};
-  int fragment_position[3]= {std::atoi(argv[5]),std::atoi(argv[6]),std::atoi(argv[7])};
-  ConvertToDracoMeshWithPreQuantization(directory, fragment_shape, fragment_position);
+  std::string input_file = argv[1];
+  std::string output_file = argv[2];
+  int fragment_origin[3]= {std::atoi(argv[3]),std::atoi(argv[4]),std::atoi(argv[5])};
+  ConvertToDracoMeshWithPreQuantization(input_file, output_file, fragment_origin);
     
   return 0;
 }

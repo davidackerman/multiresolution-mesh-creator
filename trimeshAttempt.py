@@ -5,6 +5,7 @@ import json
 import numpy as np
 import tempfile
 import subprocess
+import time
 
 from functools import cmp_to_key
 from math import floor
@@ -39,10 +40,10 @@ def append_to_submeshes(submeshes, nodes, mesh, node):
 
     return nodes, submeshes
 
-def generate_mesh_decomposition(verts, faces, nodes_per_dim, max_nodes_per_dim):
+def generate_mesh_decomposition(verts, faces, nodes_per_dim, max_nodes_per_dim, minimum_coordinates, maximum_coordinates):
     # Scale our coordinates.
-    scale = nodes_per_dim/(verts.max(axis=0) - verts.min(axis=0))
-    verts_scaled = scale*(verts - verts.min(axis=0))
+    scale = nodes_per_dim/(maximum_coordinates-minimum_coordinates)
+    verts_scaled = scale*(verts - minimum_coordinates)
     
     # Define plane normals and create a trimesh object.
     nyz, nxz, nxy = np.eye(3)
@@ -64,12 +65,9 @@ def generate_mesh_decomposition(verts, faces, nodes_per_dim, max_nodes_per_dim):
                 if len(mesh_z.vertices) > 0:                    
                     node = [floor(node_position*nodes_per_dim/max_nodes_per_dim) for node_position in [x,y,z]]
                     nodes, submeshes = append_to_submeshes(submeshes, nodes, mesh_z, node )
-                    #submeshes.append(mesh_z)
-                    #nodes.append([x,y,z])
     
     # Sort in Z-curve order
     submeshes, nodes = zip(*sorted(zip(submeshes, nodes), key=cmp_to_key(lambda x, y: cmp_zorder(x[1], y[1]))))
-    print(len(submeshes))
     return nodes, submeshes
 
 def my_export_draco(mesh, fragment_origin):
@@ -86,24 +84,33 @@ def my_export_draco(mesh, fragment_origin):
                                          ", 
                                          shell=True,
                                          stderr=subprocess.STDOUT)
-
             except subprocess.CalledProcessError as e:
                 raise RuntimeError("command '{}' return with error (code {}): {}".format(e.cmd, e.returncode, e.output))
+
             encoded.seek(0)
             data = encoded.read()
+
     return data
 
 if __name__ == "__main__":
 
     quantization_bits = 10
-    lods = np.array([0, 1, 2])
+    lods = np.array([0, 1, 2,3,4,5])
 
-    mesh = trimesh.load(f'test/mito_obj_meshes_s2/345809856042.obj')
-    verts = mesh.vertices
-    faces = mesh.faces
+    minimum_coordinates = np.array([10E9, 10E9, 10E9])
+    maximum_coordinates = np.array([-1, -1, -1])
+    for lod in lods:
+        mesh = trimesh.load(f'test/mito_obj_meshes_s{lod}/345809856042.obj')
+        current_min = mesh.vertices.min(axis=0)
+        current_max = mesh.vertices.max(axis=0)
+        minimum_coordinates = np.minimum(minimum_coordinates,  np.floor(current_min)-1)#subtract/add one for some padding
+        maximum_coordinates = np.maximum(maximum_coordinates,  np.ceil(current_max)+1)
 
-    chunk_shape = (verts.max(axis=0) - verts.min(axis=0))/2**lods.max()
-    grid_origin = verts.min(axis=0)
+    print(minimum_coordinates)
+    print(maximum_coordinates)
+
+    chunk_shape = (maximum_coordinates-minimum_coordinates)/2**lods.max()
+    grid_origin = minimum_coordinates
     lod_scales = np.array([2**lod for lod in lods])
 
     num_lods = len(lod_scales)
@@ -113,7 +120,6 @@ if __name__ == "__main__":
     fragment_positions = []
     with open('test/multiresolutionTrimesh/345809856042', 'wb') as f:
         for lod in lods:
-            scale = lod_scales[lod]
             nodes_per_dim = 2**(max(lods)-lod)
 
             mesh = trimesh.load(f'test/mito_obj_meshes_s{lod}/345809856042.obj')
@@ -121,16 +127,24 @@ if __name__ == "__main__":
             faces = mesh.faces
 
             lod_offsets = []
-            nodes, submeshes = generate_mesh_decomposition(verts.copy(), faces.copy(), nodes_per_dim, max(lod_scales))
-            
+            t0 = time.time()
+            nodes, submeshes = generate_mesh_decomposition(verts, faces, nodes_per_dim, max(lod_scales), minimum_coordinates, maximum_coordinates)
+            t1 = time.time()
+            #print(t1-t0)
             for node,mesh in zip(nodes,submeshes):
+                t2 = time.time()
                 draco = my_export_draco(mesh, node)
+                t3 = time.time()
                 f.write(draco)
                 lod_offsets.append(len(draco))
-            
+                #print(f"exporting {t3-t2}")
+            t4 = time.time()
+            #print(t4-t1)
+
             fragment_positions.append(np.array(nodes))
             fragment_offsets.append(np.array(lod_offsets))
-
+            print(f"completed {lod}")
+            
     num_fragments_per_lod = np.array([len(nodes) for nodes in fragment_positions])
 
     with open('test/multiresolutionTrimesh/345809856042.index', 'wb') as f:
