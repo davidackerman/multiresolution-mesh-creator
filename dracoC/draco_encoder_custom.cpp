@@ -14,6 +14,8 @@
 // https://stackoverflow.com/questions/62313136/how-to-include-the-draco-dec-library
 // g++ dracoEncoding.cpp -I /groups/scicompsoft/home/ackermand/local/include/ -L /groups/scicompsoft/home/ackermand/local/lib/ -ldraco -o convertToQuantizedDracoMesh
 
+// based on: https://github.com/google/neuroglancer/issues/266#issuecomment-739601142
+
 // Function object that quantizes an input `std::array<float, 3>` vertex
 // position to the specified number of bits.
 //
