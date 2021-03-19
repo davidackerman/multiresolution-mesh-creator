@@ -26,9 +26,6 @@ def cmp_zorder(lhs, rhs) -> bool:
             msd = dim
     return lhs[msd] - rhs[msd]
 
-def less_msb(x: int, y: int) -> bool:
-    return x < y and x < (x ^ y)
-
 def append_to_submeshes(submeshes, nodes, mesh, node):
 
     if node not in nodes:
