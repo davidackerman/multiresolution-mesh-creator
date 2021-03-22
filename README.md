@@ -6,6 +6,8 @@ In the example in the code, input meshes for object id 345809856042 are in direc
 
 Running `multiresolution_sharding.py` will read in the meshes and output the precomputed mesh and corresponding json.
 
+NOTE: This is a work in progress, seams may be created in meshes.
+
 ![Demo](recording/recording.gif)
 
 
