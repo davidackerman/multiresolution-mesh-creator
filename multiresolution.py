@@ -33,7 +33,7 @@ def append_to_submeshes(submeshes, nodes, mesh, node):
         submeshes.append(mesh)
     else:
         idx = nodes.index(node)
-        submeshes[idx] = trimesh.util.concatenate( [ submeshes[idx], mesh ]);
+        submeshes[idx] = trimesh.util.concatenate( [ submeshes[idx], mesh ])
 
     return nodes, submeshes
 
