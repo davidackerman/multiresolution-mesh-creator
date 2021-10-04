@@ -1,3 +1,5 @@
 test
 cube
 dask-worker-space
+.vscode
+__pycache__
