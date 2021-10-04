@@ -102,12 +102,15 @@ if __name__ == "__main__":
         current_max = mesh.vertices.max(axis=0)
         minimum_coordinates = np.minimum(minimum_coordinates,  np.floor(current_min)-1)#subtract/add one for some padding
         maximum_coordinates = np.maximum(maximum_coordinates,  np.ceil(current_max)+1)
-
+    
+    print(minimum_coordinates)
+    minimum_coordinates *= 0.5
+    maximum_coordinates *= 2
     print(minimum_coordinates)
     print(maximum_coordinates)
 
     chunk_shape = (maximum_coordinates-minimum_coordinates)/2**lods.max()
-    grid_origin = minimum_coordinates
+    grid_origin = minimum_coordinates:
     lod_scales = np.array([2**lod for lod in lods])
 
     num_lods = len(lod_scales)
@@ -141,7 +144,7 @@ if __name__ == "__main__":
             fragment_positions.append(np.array(nodes))
             fragment_offsets.append(np.array(lod_offsets))
             print(f"completed {lod}")
-            
+
     num_fragments_per_lod = np.array([len(nodes) for nodes in fragment_positions])
 
     with open('test/multiresolutionTrimesh/345809856042.index', 'wb') as f:
