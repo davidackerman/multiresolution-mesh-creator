@@ -1,5 +1,5 @@
 test
 cube
-dask-worker-space
-.vscode
-__pycache__
+dask-worker-space/
+.vscode/
+__pycache__/
