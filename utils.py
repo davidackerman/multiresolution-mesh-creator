@@ -60,9 +60,9 @@ def rewrite_index_with_empty_fragments(path, current_lod_fragments):
     #now we are going to add the new lod info and update lower lods
     num_lods += 1
     all_current_fragment_positions.append(
-        [fragment.position for fragment in current_lod_fragments].astype(int))
+        np.asarray([fragment.position for fragment in current_lod_fragments]).astype(int))
     all_current_fragment_offsets.append(
-        [fragment.offset for fragment in current_lod_fragments].tolist())
+        [fragment.offset for fragment in current_lod_fragments])
 
     #first process based on newly added fragments
     all_missing_fragment_positions = []
@@ -83,8 +83,8 @@ def rewrite_index_with_empty_fragments(path, current_lod_fragments):
                 #normally we would just do the following with -0 and +1, but because of quantization that occurs(?), this makes things extra conservative so we don't miss things
                 # ensures that it is positive, otherwise wound up with -1 to uint, causing errors
                 chunking_start = np.maximum(
-                    (fragment.position*1.0)//current_chunk_shape-1, [0, 0, 0]).astype(np.uint32)
-                chunking_end = (fragment.position+1)+2
+                    (np.asarray(fragment.position)*1.0)//current_chunk_shape-1, [0, 0, 0]).astype(np.uint32)
+                chunking_end = (np.asarray(fragment.position)+1)+2
                 x_range = range(chunking_start[0], chunking_end[0])
                 y_range = range(chunking_start[1], chunking_end[1])
                 z_range = range(chunking_start[2], chunking_end[2])
@@ -117,6 +117,7 @@ def rewrite_index_with_empty_fragments(path, current_lod_fragments):
         num_fragments_per_lod.append(len(all_fragment_offsets[lod]))
 
     num_fragments_per_lod = np.array(num_fragments_per_lod)
+    print(num_fragments_per_lod)
     lod_scales = np.array([2**i for i in range(num_lods)])
     vertex_offsets = np.array([[0., 0., 0.] for _ in range(num_lods)])
     with open(f"{path}.index_with_empty_fragments", 'ab') as f:
