@@ -4,6 +4,7 @@ import sys
 from io_utils import stdout_redirected
 import time
 from dvidutils import encode_faces_to_custom_drc_bytes
+import pyfqmr
 
 
 def simplify_openmesh(self, fraction):
@@ -164,40 +165,50 @@ if __name__ == "__main__":
     print(np.min(mesh.vertices, axis=0))
     print(np.max(mesh.vertices, axis=0))
     #trimesh.repair.fix_winding(mesh)
-    generate_mesh_decomposition(mesh)
+    #generate_mesh_decomposition(mesh)
     print("fixed")
     fraction = 0.25
     import openmesh as om
 
     for i in range(1, 7):
+        t0 = time.time()
         target = max(4, int(fraction * len(mesh.vertices)))
 
-        try:
-            sys.stderr.fileno()
-        except:
-            # Can't redirect stderr if it has no file descriptor.
-            # Just let the output spill to wherever it's going.
-            m = om.TriMesh(mesh.vertices, mesh.faces)
-        else:
-            # Hide stderr, since OpenMesh construction is super noisy.
-            with stdout_redirected(stdout=sys.stderr):
-                m = om.TriMesh(mesh.vertices, mesh.faces)
-    h = om.TriMeshModQuadricHandle()
-    d = om.TriMeshDecimater(m)
-    d.add(h)
-    d.module(h).unset_max_err()
-    d.initialize()
+        # try:
+        #     sys.stderr.fileno()
+        # except:
+        #     # Can't redirect stderr if it has no file descriptor.
+        #     # Just let the output spill to wherever it's going.
+        #     m = om.TriMesh(mesh.vertices, mesh.faces)
+        # else:
+        #     # Hide stderr, since OpenMesh construction is super noisy.
+        #     with stdout_redirected(stdout=sys.stderr):
+        #         m = om.TriMesh(mesh.vertices, mesh.faces)
+        # h = om.TriMeshModQuadricHandle()
+        # d = om.TriMeshDecimater(m)
+        # d.add(h)
+        # d.module(h).unset_max_err()
+        # d.initialize()
 
-    print(
-        f"Attempting to decimate to {target} (Reduce by {len(mesh.vertices) - target})")
-    eliminated_count = d.decimate_to(target)
-    print(f"Reduced by {eliminated_count}")
-    m.garbage_collection()
+        # print(
+        #     f"Attempting to decimate to {target} (Reduce by {len(mesh.vertices) - target})")
+        # eliminated_count = d.decimate_to(target)
+        # print(f"Reduced by {eliminated_count}")
+        # m.garbage_collection()
+        # print(time.time()-t0)
 
-    mesh.vertices = m.points().astype(np.float32)
-    mesh.faces = m.face_vertex_indices().astype(np.uint32)
+        # mesh.vertices = m.points().astype(np.float32)
+        # mesh.faces = m.face_vertex_indices().astype(np.uint32)
 
-    print(f"{i} simplified")
-    _ = mesh.export(
-        f"/groups/cosem/cosem/ackermand/meshesForWebsite/res1decimation0p1/jrc_hela-1/test/17_{i}.obj")
-    print(f"{i} finished")
+        #mesh = mesh.simplify_quadratic_decimation(len(mesh.faces)/2)
+        mesh_simplifier = pyfqmr.Simplify()
+        mesh_simplifier.setMesh(mesh.vertices, mesh.faces)
+        mesh_simplifier.simplify_mesh(
+            target_count=len(mesh.faces)//4, aggressiveness=7, preserve_border=True, verbose=0)
+        mesh.vertices, mesh.faces, _ = mesh_simplifier.getMesh()
+        print(time.time()-t0)
+
+        print(f"{i} simplified")
+        _ = mesh.export(
+            f"/groups/cosem/cosem/ackermand/meshesForWebsite/res1decimation0p1/jrc_hela-1/test/17_{i}.obj")
+        print(f"{i} finished")

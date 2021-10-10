@@ -42,7 +42,7 @@ def rewrite_index_with_empty_fragments(path, current_lod_fragments):
     num_lods = num_lods[0]
     lod_scales, file_content = unpack_and_remove("f", num_lods, file_content)
     vertex_offsets, file_content = unpack_and_remove(
-        "I", num_lods*3, file_content)
+        "f", num_lods*3, file_content)
     num_fragments_per_lod, file_content = unpack_and_remove(
         "I", num_lods, file_content)
     all_current_fragment_positions = []
@@ -225,7 +225,8 @@ def write_mesh_file(path, fragments):
 def write_files(mesh_directory, object_id, fragments, current_lod, lods, chunk_shape):
     path = mesh_directory + "/" + object_id
     fragments = zorder_fragments(fragments)
-    write_index_file(path, fragments, current_lod, lods, chunk_shape)
+    write_index_file(path, fragments, current_lod,
+                     lods, chunk_shape)
     write_mesh_file(path, fragments)
     write_segment_properties_file(mesh_directory)
     write_info_file(mesh_directory)
