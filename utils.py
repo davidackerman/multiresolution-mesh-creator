@@ -9,8 +9,8 @@ from collections import namedtuple
 
 import sys
 
-InfoForIndexFile = namedtuple('InfoForIndexFile', ['position', 'offset'])
-Fragment = namedtuple('Fragment', ['draco_bytes', 'position', 'offset'])
+Fragment = namedtuple(
+    'Fragment', ['draco_bytes', 'position', 'offset', 'lod_0_positions'])
 
 
 def _cmp_zorder(lhs, rhs) -> bool:
@@ -88,17 +88,9 @@ def rewrite_index_with_empty_fragments(path, current_lod_fragments):
             for fragment in current_lod_fragments:
                 # normally we would just do the following with -0 and +1, but because of quantization that occurs(?), this makes things extra conservative so we don't miss things
                 # ensures that it is positive, otherwise wound up with -1 to uint, causing errors
-                chunking_start = np.maximum(
-                    fragment.position*(2**(current_lod-lod)), [0, 0, 0]).astype(np.uint32)
-                chunking_end = (fragment.position+1)*(2**(current_lod-lod))
-                x_range = range(chunking_start[0], chunking_end[0])
-                y_range = range(chunking_start[1], chunking_end[1])
-                z_range = range(chunking_start[2], chunking_end[2])
-
-                all_required_fragment_positions_np = np.array([[[[chunk_start_x, chunk_start_y, chunk_start_z] for chunk_start_x in x_range]
-                                                              for chunk_start_y in y_range] for chunk_start_z in z_range]).reshape(-1, 3).astype(int)
+                new_required_fragment_positions = fragment.lod_0_positions//2**lod
                 all_required_fragment_positions.update(
-                    set(map(tuple, all_required_fragment_positions_np)))
+                    set(map(tuple, new_required_fragment_positions)))
         current_missing_fragment_positions = all_required_fragment_positions - \
             set(map(tuple, all_current_fragment_positions[lod]))
         all_missing_fragment_positions.append(
@@ -227,7 +219,8 @@ def write_mesh_file(path, fragments):
     with open(path, 'ab') as f:
         for idx, fragment in enumerate(fragments):
             f.write(fragment.draco_bytes)
-            fragments[idx] = Fragment(None, fragment.position, fragment.offset)
+            fragments[idx] = Fragment(
+                None, fragment.position, fragment.offset, fragment.lod_0_positions)
 
     return fragments
 

@@ -12,8 +12,7 @@ import sys
 import os
 import pyfqmr
 from dask.distributed import Client, progress
-
-Fragment = namedtuple('Fragment', ['draco_bytes', 'position', 'offset'])
+from utils import Fragment
 
 
 def get_face_indices_in_range(mesh, face_mins, stop):
@@ -51,17 +50,20 @@ def my_slice_faces_plane(v, f, plane_normal, plane_origin):
     return v, f
 
 
-def update_dict(combined_fragments_dictionary, fragment_origin, v, f):
+def update_dict(combined_fragments_dictionary, fragment_origin, v, f, lod_0_fragment_position):
     if fragment_origin in combined_fragments_dictionary:
-        [v_combined, f_combined] = combined_fragments_dictionary[fragment_origin]
+        [v_combined, f_combined,
+            lod_0_fragment_positions_combined] = combined_fragments_dictionary[fragment_origin]
 
         f_combined = np.vstack((f_combined, f+len(v_combined)))
         v_combined = np.vstack((v_combined, v))
+        lod_0_fragment_positions_combined.append(lod_0_fragment_position)
 
         combined_fragments_dictionary[fragment_origin] = [
-            v_combined, f_combined]
+            v_combined, f_combined, lod_0_fragment_positions_combined]
     else:
-        combined_fragments_dictionary[fragment_origin] = [v, f]
+        combined_fragments_dictionary[fragment_origin] = [
+            v, f, [lod_0_fragment_position]]
 
     return combined_fragments_dictionary
 
@@ -94,13 +96,14 @@ def generate_mesh_decomposition(v, f, lod_0_box_size, start_fragment, end_fragme
                 vz, fz = my_slice_faces_plane(
                     vy, fy, plane_normal=-nxy, plane_origin=nxy*(z+1)*sub_box_size)
 
+                lod_0_fragment_position = tuple(np.asarray([x, y, z]))
                 if current_lod != starting_lod:
-                    fragment_origin = tuple(np.asarray([x, y, z]) // 2)
+                    fragment_position = tuple(np.asarray([x, y, z]) // 2)
                 else:
-                    fragment_origin = tuple(np.asarray([x, y, z]))
+                    fragment_position = lod_0_fragment_position
 
                 combined_fragments_dictionary = update_dict(
-                    combined_fragments_dictionary, fragment_origin, vz, fz)
+                    combined_fragments_dictionary, fragment_position, vz, fz, list(lod_0_fragment_position))
 
                 vy, fy = my_slice_faces_plane(
                     vy, fy, plane_normal=nxy, plane_origin=nxy*(z+1)*sub_box_size)
@@ -111,18 +114,15 @@ def generate_mesh_decomposition(v, f, lod_0_box_size, start_fragment, end_fragme
         v, f = my_slice_faces_plane(
             v, f, plane_normal=nyz, plane_origin=nyz*(x+1)*sub_box_size)
 
-    # if current_lod==starting_lod:
-    #     return fragments
-
-    #return combined_fragments_dictionary
-    for fragment_origin, [v, f] in combined_fragments_dictionary.items():
+    # return combined_fragments_dictionary
+    for fragment_origin, [v, f, lod_0_fragment_positions] in combined_fragments_dictionary.items():
         current_box_size = lod_0_box_size*2**(current_lod-starting_lod)
         draco_bytes = encode_faces_to_custom_drc_bytes(
             v, np.zeros(np.shape(v)), f, np.asarray(3*[current_box_size]), np.asarray(fragment_origin)*current_box_size, position_quantization_bits=10)
 
         if len(draco_bytes) > 12:
             fragment = Fragment(draco_bytes, np.asarray(
-                fragment_origin), len(draco_bytes))
+                fragment_origin), len(draco_bytes), np.asarray(lod_0_fragment_positions))
             fragments.append(fragment)
 
     return fragments
@@ -218,18 +218,15 @@ def generate_neuroglancer_meshes(input_path, output_path, id, client):
             fragment for fragments in dask_results for fragment in fragments]
         results = []
         dask_results = []
-        print("done")
         utils.write_files(output_path, f"{id}", fragments, current_lod, lods[:idx+1], np.asarray(
             [lod_0_box_size, lod_0_box_size, lod_0_box_size]))
-        print("write")
-        print(id, current_lod, time.time()-t)
 
 
 if __name__ == "__main__":
     client = Client(threads_per_worker=4,
                     n_workers=16)
     t0 = time.time()
-    for id in [1, 2]:  # range(1, 158):
+    for id in [1, 3]:  # range(1, 158): # range(1, 158):
         t_id_start = time.time()
         generate_neuroglancer_meshes(
             "/groups/cosem/cosem/ackermand/meshesForWebsite/res1decimation0p1/jrc_hela-1/er_seg/", "/groups/cosem/cosem/ackermand/meshesForWebsite/res1decimation0p1/jrc_hela-1/test_simpler_multires/", id, client)
