@@ -132,7 +132,7 @@ def pyfqmr_decimate(v, f, fraction):
     mesh_simplifier = pyfqmr.Simplify()
     mesh_simplifier.setMesh(v, f)
     mesh_simplifier.simplify_mesh(
-        target_count=len(f)//2, aggressiveness=7, preserve_border=False, verbose=0)
+        target_count=len(f)//fraction, aggressiveness=7, preserve_border=False, verbose=0)
     v, f, _ = mesh_simplifier.getMesh()
     return v, f
 
@@ -203,7 +203,7 @@ def generate_neuroglancer_meshes(input_path, output_path, id, client):
         f = f_whole
 
         if len(lods) > 1:  # decimate here so don't have to keep original v_whole, f_whole around
-            v_whole, f_whole = pyfqmr_decimate(v_whole, f_whole, 4)
+            v_whole, f_whole = pyfqmr_decimate(v_whole, f_whole, 2)
 
         for x in range(start_fragment[0], end_fragment[0]+1, x_stride):
             vx, fx = my_slice_faces_plane(
@@ -213,7 +213,9 @@ def generate_neuroglancer_meshes(input_path, output_path, id, client):
                     client.scatter(vx), client.scatter(fx), lod_0_box_size, start_fragment, end_fragment, x, x+x_stride, current_lod, lods[0]))
                 v, f = my_slice_faces_plane(
                     v, f, plane_normal=nyz, plane_origin=nyz*(x+x_stride)*current_box_size)
+
         dask_results = dask.compute(* results)
+
         fragments = [
             fragment for fragments in dask_results for fragment in fragments]
         results = []
@@ -226,7 +228,7 @@ if __name__ == "__main__":
     client = Client(threads_per_worker=4,
                     n_workers=16)
     t0 = time.time()
-    for id in [1, 3]:  # range(1, 158): # range(1, 158):
+    for id in range(1, 158):    # range(1, 158):
         t_id_start = time.time()
         generate_neuroglancer_meshes(
             "/groups/cosem/cosem/ackermand/meshesForWebsite/res1decimation0p1/jrc_hela-1/er_seg/", "/groups/cosem/cosem/ackermand/meshesForWebsite/res1decimation0p1/jrc_hela-1/test_simpler_multires/", id, client)

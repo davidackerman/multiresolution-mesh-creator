@@ -116,7 +116,6 @@ def rewrite_index_with_empty_fragments(path, current_lod_fragments):
         num_fragments_per_lod.append(len(all_fragment_offsets[lod]))
 
     num_fragments_per_lod = np.array(num_fragments_per_lod)
-    print(num_fragments_per_lod)
     lod_scales = np.array([2**i for i in range(num_lods)])
     vertex_offsets = np.array([[0., 0., 0.] for _ in range(num_lods)])
     with open(f"{path}.index_with_empty_fragments", 'ab') as f:
@@ -188,7 +187,7 @@ def zorder_fragments(fragments):
 
 
 def write_index_file(path, fragments, current_lod, lods, chunk_shape):
-    print(len(fragments))
+
     # since we don't know if the lowest res ones will have meshes for all svs
     lods = [lod for lod in lods if lod <= current_lod]
 
