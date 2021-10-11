@@ -5,6 +5,12 @@ import struct
 import os
 import json
 import glob
+from collections import namedtuple
+
+import sys
+
+InfoForIndexFile = namedtuple('InfoForIndexFile', ['position', 'offset'])
+Fragment = namedtuple('Fragment', ['draco_bytes', 'position', 'offset'])
 
 
 def _cmp_zorder(lhs, rhs) -> bool:
@@ -32,7 +38,7 @@ def rewrite_index_with_empty_fragments(path, current_lod_fragments):
         file_content = file_content[4*num_elements:]
         return np.array(output), file_content
 
-    #index file contains info from all previous lods
+    # index file contains info from all previous lods
     with open(f"{path}.index", mode='rb') as file:
         file_content = file.read()
 
@@ -57,21 +63,21 @@ def rewrite_index_with_empty_fragments(path, current_lod_fragments):
         all_current_fragment_positions.append(fragment_positions.astype(int))
         all_current_fragment_offsets.append(fragment_offsets.tolist())
 
-    #now we are going to add the new lod info and update lower lods
+    # now we are going to add the new lod info and update lower lods
+    current_lod = num_lods
     num_lods += 1
     all_current_fragment_positions.append(
         np.asarray([fragment.position for fragment in current_lod_fragments]).astype(int))
     all_current_fragment_offsets.append(
         [fragment.offset for fragment in current_lod_fragments])
 
-    #first process based on newly added fragments
+    # first process based on newly added fragments
     all_missing_fragment_positions = []
     for lod in range(num_lods):
         all_required_fragment_positions = set()
-        current_chunk_shape = (chunk_shape*2**lod).astype(int)
 
-        if lod == num_lods-1:  # then we are processing newest lod
-            #add those that are required based on lower lods
+        if lod == current_lod:  # then we are processing newest lod
+            # add those that are required based on lower lods
             for lower_lod in range(lod):
                 all_required_fragment_positions_np = np.unique(
                     all_current_fragment_positions[lower_lod]//2**(lod-lower_lod), axis=0).astype(int)
@@ -80,14 +86,15 @@ def rewrite_index_with_empty_fragments(path, current_lod_fragments):
         else:
             # update lower lods based on current lod
             for fragment in current_lod_fragments:
-                #normally we would just do the following with -0 and +1, but because of quantization that occurs(?), this makes things extra conservative so we don't miss things
+                # normally we would just do the following with -0 and +1, but because of quantization that occurs(?), this makes things extra conservative so we don't miss things
                 # ensures that it is positive, otherwise wound up with -1 to uint, causing errors
                 chunking_start = np.maximum(
-                    (np.asarray(fragment.position)*1.0)//current_chunk_shape-1, [0, 0, 0]).astype(np.uint32)
-                chunking_end = (np.asarray(fragment.position)+1)+2
+                    fragment.position*(2**(current_lod-lod)), [0, 0, 0]).astype(np.uint32)
+                chunking_end = (fragment.position+1)*(2**(current_lod-lod))
                 x_range = range(chunking_start[0], chunking_end[0])
                 y_range = range(chunking_start[1], chunking_end[1])
                 z_range = range(chunking_start[2], chunking_end[2])
+
                 all_required_fragment_positions_np = np.array([[[[chunk_start_x, chunk_start_y, chunk_start_z] for chunk_start_x in x_range]
                                                               for chunk_start_y in y_range] for chunk_start_z in z_range]).reshape(-1, 3).astype(int)
                 all_required_fragment_positions.update(
@@ -143,7 +150,7 @@ def rewrite_index_with_empty_fragments(path, current_lod_fragments):
 
 
 def write_info_file(path):
-    #default to 10 quantization bits
+    # default to 10 quantization bits
     with open(f'{path}/info', 'w') as f:
         info = {
             '@type': 'neuroglancer_multilod_draco',
@@ -181,14 +188,15 @@ def write_segment_properties_file(path):
 
 
 def zorder_fragments(fragments):
-    #fragments = [
+    # fragments = [
     #    fragment for fragment in fragments if len(fragment.draco_bytes) > 12]
     fragments, _ = zip(*sorted(
         zip(fragments, [fragment.position for fragment in fragments]), key=cmp_to_key(lambda x, y: _cmp_zorder(x[1], y[1]))))
-    return fragments
+    return list(fragments)
 
 
 def write_index_file(path, fragments, current_lod, lods, chunk_shape):
+    print(len(fragments))
     # since we don't know if the lowest res ones will have meshes for all svs
     lods = [lod for lod in lods if lod <= current_lod]
 
@@ -197,7 +205,6 @@ def write_index_file(path, fragments, current_lod, lods, chunk_shape):
     lod_scales = np.array([2**i for i in range(num_lods)])
     vertex_offsets = np.array([[0., 0., 0.] for _ in range(num_lods)])
     num_fragments_per_lod = np.array([len(fragments)])
-
     if current_lod == lods[0]:  # then is highest res lod
 
         with open(f"{path}.index", 'wb') as f:
@@ -218,15 +225,18 @@ def write_index_file(path, fragments, current_lod, lods, chunk_shape):
 
 def write_mesh_file(path, fragments):
     with open(path, 'ab') as f:
-        for fragment in fragments:
+        for idx, fragment in enumerate(fragments):
             f.write(fragment.draco_bytes)
+            fragments[idx] = Fragment(None, fragment.position, fragment.offset)
+
+    return fragments
 
 
 def write_files(mesh_directory, object_id, fragments, current_lod, lods, chunk_shape):
     path = mesh_directory + "/" + object_id
     fragments = zorder_fragments(fragments)
+    fragments = write_mesh_file(path, fragments)
     write_index_file(path, fragments, current_lod,
                      lods, chunk_shape)
-    write_mesh_file(path, fragments)
     write_segment_properties_file(mesh_directory)
     write_info_file(mesh_directory)
