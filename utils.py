@@ -224,11 +224,9 @@ def write_mesh_file(path, fragments):
     return fragments
 
 
-def write_files(mesh_directory, object_id, fragments, current_lod, lods, chunk_shape):
+def write_mesh_files(mesh_directory, object_id, fragments, current_lod, lods, chunk_shape):
     path = mesh_directory + "/" + object_id
     fragments = zorder_fragments(fragments)
     fragments = write_mesh_file(path, fragments)
     write_index_file(path, fragments, current_lod,
                      lods, chunk_shape)
-    write_segment_properties_file(mesh_directory)
-    write_info_file(mesh_directory)

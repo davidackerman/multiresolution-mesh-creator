@@ -11,8 +11,9 @@ import openmesh as om
 import sys
 import os
 import pyfqmr
-from dask.distributed import Client, progress
+from dask.distributed import Client, progress, get_client, worker_client
 from utils import Fragment
+import logging
 
 
 def get_face_indices_in_range(mesh, face_mins, stop):
@@ -128,15 +129,6 @@ def generate_mesh_decomposition(v, f, lod_0_box_size, start_fragment, end_fragme
     return fragments
 
 
-def pyfqmr_decimate(v, f, fraction):
-    mesh_simplifier = pyfqmr.Simplify()
-    mesh_simplifier.setMesh(v, f)
-    mesh_simplifier.simplify_mesh(
-        target_count=len(f)//fraction, aggressiveness=7, preserve_border=False, verbose=0)
-    v, f, _ = mesh_simplifier.getMesh()
-    return v, f
-
-
 def decimate(v, f, fraction):
     target = max(4, int(fraction * len(v)))
 
@@ -169,13 +161,33 @@ def decimate(v, f, fraction):
     return v, f
 
 
-def generate_neuroglancer_meshes(input_path, output_path, id, client):
+def pyfqmr_decimate(v, f, fraction):
+    desired_faces = max(len(f)//fraction,  1)
 
-    os.system(f"rm -rf {output_path}/{id}*")
+    mesh_simplifier = pyfqmr.Simplify()
+    mesh_simplifier.setMesh(v, f)
+    mesh_simplifier.simplify_mesh(
+        target_count=desired_faces, aggressiveness=7, preserve_border=False, verbose=False)
+    v, f, _ = mesh_simplifier.getMesh()
+
+    return [v, f]
+
+
+@dask.delayed
+def generate_multiscale_meshes(input_path, output_path, lods, id):
+    for idx, current_lod in enumerate(lods):
+        if len(lods) > 1:  # decimate here so don't have to keep original v_whole, f_whole around
+            v_whole, f_whole = pyfqmr_decimate(v_whole, f_whole, 2)
+
+
+@dask.delayed
+def generate_neuroglancer_meshes(input_path, output_path, num_workers, id):
+
+    #  with worker_client() as client:
+    os.system(f"rm -rf {output_path}/{id} {output_path}/{id}.index")
     mesh = trimesh.load(f"{input_path}/{id}.obj")
 
-    nyz, nxz, nxy = np.eye(3)
-    num_workers = 16
+    nyz, _, _ = np.eye(3)
     num_lods = 6
 
     lods = list(range(num_lods))
@@ -187,10 +199,8 @@ def generate_neuroglancer_meshes(input_path, output_path, id, client):
 
     lod_0_box_size = 64*4
     results = []
-
     for idx, current_lod in enumerate(lods):
 
-        t = time.time()
         current_box_size = lod_0_box_size * 2**(current_lod-lods[0])
         start_fragment = np.maximum(np.min(v_whole, axis=0).astype(
             int) // current_box_size - 1, np.array([0, 0, 0]))
@@ -208,9 +218,11 @@ def generate_neuroglancer_meshes(input_path, output_path, id, client):
         for x in range(start_fragment[0], end_fragment[0]+1, x_stride):
             vx, fx = my_slice_faces_plane(
                 v, f, plane_normal=-nyz, plane_origin=nyz*(x+x_stride)*current_box_size)
+
             if len(vx) > 0:
                 results.append(generate_mesh_decomposition(
-                    client.scatter(vx), client.scatter(fx), lod_0_box_size, start_fragment, end_fragment, x, x+x_stride, current_lod, lods[0]))
+                    vx, fx, lod_0_box_size, start_fragment, end_fragment, x, x+x_stride, current_lod, lods[0]))
+
                 v, f = my_slice_faces_plane(
                     v, f, plane_normal=nyz, plane_origin=nyz*(x+x_stride)*current_box_size)
 
@@ -220,17 +232,31 @@ def generate_neuroglancer_meshes(input_path, output_path, id, client):
             fragment for fragments in dask_results for fragment in fragments]
         results = []
         dask_results = []
-        utils.write_files(output_path, f"{id}", fragments, current_lod, lods[:idx+1], np.asarray(
+        utils.write_mesh_files(output_path, f"{id}", fragments, current_lod, lods[:idx+1], np.asarray(
             [lod_0_box_size, lod_0_box_size, lod_0_box_size]))
+
+    print(f"Completed id {id}!")
 
 
 if __name__ == "__main__":
-    client = Client(threads_per_worker=4,
-                    n_workers=16)
+
+    # If more than 1 thread per worker, run into issues with decimation?
+
+    num_workers = 20
+    client = Client(threads_per_worker=1,
+                    n_workers=num_workers,
+                    memory_limit='16GB')
     t0 = time.time()
-    for id in range(1, 158):    # range(1, 158):
+    results = []
+    input_path = "/groups/cosem/cosem/ackermand/meshesForWebsite/res1decimation0p1/jrc_hela-1/er_seg/"
+    output_path = "/groups/cosem/cosem/ackermand/meshesForWebsite/res1decimation0p1/jrc_hela-1/test_simpler_multires/"
+    for id in range(1,  158):
         t_id_start = time.time()
-        generate_neuroglancer_meshes(
-            "/groups/cosem/cosem/ackermand/meshesForWebsite/res1decimation0p1/jrc_hela-1/er_seg/", "/groups/cosem/cosem/ackermand/meshesForWebsite/res1decimation0p1/jrc_hela-1/test_simpler_multires/", id, client)
+        results.append(generate_neuroglancer_meshes(
+            input_path, output_path, num_workers, id))
         t_id_end = time.time()
-        print(id, t_id_end-t_id_start, t_id_end-t0)
+
+    dask_results = dask.compute(*results)
+    utils.write_segment_properties_file(output_path)
+    utils.write_info_file(output_path)
+    print("end", time.time()-t0)
