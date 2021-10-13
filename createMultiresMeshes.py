@@ -17,20 +17,19 @@ import logging
 from numba import jit
 
 
-@jit
-def get_faces_within_slice(v, f, fv, slice_min, slice_max, axis, max_edge_length):
-    slice_min -= max_edge_length
-    slice_max += max_edge_length
-    if axis == "x":
-        c = 0
-    elif axis == "y":
-        c = 1
-    elif axis == "z":
-        c = 2
+@jit(nopython=True)
+def get_faces_within_slice(v, f, fv, max_edge_length, plane_normal, plane_origin):
+    ax = np.where(plane_normal != 0)[0][0]
+    plane_origin = plane_origin[ax]
+    if np.any(plane_normal < 0):
+        plane_origin = plane_origin+max_edge_length
+        faces_in_range = np.where(
+            (fv[:, 0+ax] <= plane_origin) | (fv[:, 3+ax] <= plane_origin) | (fv[:, 6+ax] <= plane_origin))[0]
+    else:
+        plane_origin = plane_origin-max_edge_length
+        faces_in_range = np.where(
+            (fv[:, 0+ax] >= plane_origin) | (fv[:, 3+ax] >= plane_origin) | (fv[:, 6+ax] >= plane_origin))[0]
 
-    faces_in_range = np.where((fv[:, 0+c] >= slice_min) & (fv[:, 0+c] <= slice_max) &
-                              (fv[:, 3+c] >= slice_min) & (fv[:, 3+c] <= slice_max) &
-                              (fv[:, 6+c] >= slice_min) & (fv[:, 6+c] <= slice_max))[0]
     f = f[faces_in_range].reshape(-1)
 
     v_unq = np.unique(f)  # Numba doesn't support return_inverse argument
@@ -38,7 +37,7 @@ def get_faces_within_slice(v, f, fv, slice_min, slice_max, axis, max_edge_length
     for idx, v_unq_idx in enumerate(v_unq):
         v_renumbering_dict[v_unq_idx] = idx
 
-    f = np.array([v_renumbering_dict[f_idx] for f_idx in f])
+    f = np.array([v_renumbering_dict[v_idx] for v_idx in f])
 
     v = v[v_unq]
 
@@ -46,12 +45,12 @@ def get_faces_within_slice(v, f, fv, slice_min, slice_max, axis, max_edge_length
     return v, f
 
 
-def my_fast_slice_faces_plane(v, f, fv, slice_min, slice_max, axis, max_edge_length, plane_normal, plane_origin):
+def my_fast_slice_faces_plane(v, f, fv, max_edge_length, plane_normal, plane_origin):
     if len(v) > 0:
         v, f = get_faces_within_slice(
-            v, f, fv, slice_min, slice_max,  axis, max_edge_length)
+            v, f, fv, max_edge_length, plane_normal, plane_origin)
         v, f = my_slice_faces_plane(
-            v, f, plane_normal=plane_normal, plane_origin=plane_origin)
+            v, f, plane_normal, plane_origin)
     return v, f
 
 
@@ -233,7 +232,7 @@ def generate_single_neuroglancer_mesh(output_path, num_workers, id, lods, origin
 
         lod_0_box_size = 64*4
         results = []
-        max_edge_length = mesh.edges_unique_length.max
+
         for idx, current_lod in enumerate(lods):
             if current_lod == 0:
                 mesh = trimesh.load(
@@ -243,6 +242,7 @@ def generate_single_neuroglancer_mesh(output_path, num_workers, id, lods, origin
 
             v = mesh.vertices
             f = mesh.faces
+            max_edge_length = mesh.edges_unique_length.max()
 
             current_box_size = lod_0_box_size * 2**current_lod
             start_fragment = np.maximum(
@@ -252,14 +252,15 @@ def generate_single_neuroglancer_mesh(output_path, num_workers, id, lods, origin
                 np.ceil(1.0*(end_fragment[0]-start_fragment[0])/num_workers))
 
             for x in range(start_fragment[0], end_fragment[0]+1, x_stride):
-                vx, fx = my_fast_slice_faces_plane(
+                #fv = v.view(np.ndarray)[f]
+                vx, fx = my_slice_faces_plane(
                     v, f, plane_normal=-nyz, plane_origin=nyz*(x+x_stride)*current_box_size)
 
                 if len(vx) > 0:
                     results.append(generate_mesh_decomposition(
                         client.scatter(vx), client.scatter(fx), lod_0_box_size, start_fragment, end_fragment, x, x+x_stride, current_lod))
 
-                    v, f = my_fast_slice_faces_plane(
+                    v, f = my_slice_faces_plane(
                         v, f, plane_normal=nyz, plane_origin=nyz*(x+x_stride)*current_box_size)
 
             dask_results = dask.compute(* results)
@@ -289,7 +290,7 @@ if __name__ == "__main__":
     input_path = "/groups/cosem/cosem/ackermand/meshesForWebsite/res1decimation0p1/jrc_hela-1/er_seg/"
     output_path = "/groups/cosem/cosem/ackermand/meshesForWebsite/res1decimation0p1/jrc_hela-1/test_simpler_multires/"
     results = []
-    ids = list(range(1,  2))
+    ids = list(range(1,  158))
     lods = list(range(num_lods))
 
     t0 = time.time()
