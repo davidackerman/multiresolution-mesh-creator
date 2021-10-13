@@ -179,8 +179,7 @@ def write_segment_properties_file(path):
 
 
 def zorder_fragments(fragments):
-    # fragments = [
-    #    fragment for fragment in fragments if len(fragment.draco_bytes) > 12]
+
     fragments, _ = zip(*sorted(
         zip(fragments, [fragment.position for fragment in fragments]), key=cmp_to_key(lambda x, y: _cmp_zorder(x[1], y[1]))))
     return list(fragments)
