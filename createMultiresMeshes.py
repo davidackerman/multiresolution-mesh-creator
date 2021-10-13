@@ -14,25 +14,45 @@ import pyfqmr
 from dask.distributed import Client, progress, get_client, worker_client
 from utils import Fragment
 import logging
+from numba import jit
 
 
-def get_face_indices_in_range(mesh, face_mins, stop):
-    max_edge_length = np.max(mesh.edges_unique_length)
-    rows = np.where(face_mins[:, 0] < stop+max_edge_length)
-    return rows[0]
+@jit
+def get_faces_within_slice(v, f, fv, slice_min, slice_max, axis, max_edge_length):
+    slice_min -= max_edge_length
+    slice_max += max_edge_length
+    if axis == "x":
+        c = 0
+    elif axis == "y":
+        c = 1
+    elif axis == "z":
+        c = 2
+
+    faces_in_range = np.where((fv[:, 0+c] >= slice_min) & (fv[:, 0+c] <= slice_max) &
+                              (fv[:, 3+c] >= slice_min) & (fv[:, 3+c] <= slice_max) &
+                              (fv[:, 6+c] >= slice_min) & (fv[:, 6+c] <= slice_max))[0]
+    f = f[faces_in_range].reshape(-1)
+
+    v_unq = np.unique(f)  # Numba doesn't support return_inverse argument
+    v_renumbering_dict = {}
+    for idx, v_unq_idx in enumerate(v_unq):
+        v_renumbering_dict[v_unq_idx] = idx
+
+    f = np.array([v_renumbering_dict[f_idx] for f_idx in f])
+
+    v = v[v_unq]
+
+    f = f.reshape(-1, 3)
+    return v, f
 
 
-def renumber_vertex_indices(faces, vertex_indices_in_range):
-    def renumber_indicies(a, val_old, val_new):
-        arr = np.empty(a.max()+1, dtype=val_new.dtype)
-        arr[val_old] = val_new
-        return arr[a]
-
-    faces = np.reshape(faces, -1)
-    faces = renumber_indicies(
-        faces, vertex_indices_in_range, np.arange(len(vertex_indices_in_range)))
-
-    return np.reshape(faces, (-1, 3))
+def my_fast_slice_faces_plane(v, f, fv, slice_min, slice_max, axis, max_edge_length, plane_normal, plane_origin):
+    if len(v) > 0:
+        v, f = get_faces_within_slice(
+            v, f, fv, slice_min, slice_max,  axis, max_edge_length)
+        v, f = my_slice_faces_plane(
+            v, f, plane_normal=plane_normal, plane_origin=plane_origin)
+    return v, f
 
 
 def my_slice_faces_plane(v, f, plane_normal, plane_origin):
@@ -70,7 +90,7 @@ def update_dict(combined_fragments_dictionary, fragment_origin, v, f, lod_0_frag
 
 
 @dask.delayed
-def generate_mesh_decomposition(v, f, lod_0_box_size, start_fragment, end_fragment, x_start, x_end, current_lod):
+def generate_mesh_decomposition(v, f, lod_0_box_size, start_fragment, end_fragment, x_start,  x_end, current_lod):
     combined_fragments_dictionary = {}
     fragments = []
 
@@ -213,6 +233,7 @@ def generate_single_neuroglancer_mesh(output_path, num_workers, id, lods, origin
 
         lod_0_box_size = 64*4
         results = []
+        max_edge_length = mesh.edges_unique_length.max
         for idx, current_lod in enumerate(lods):
             if current_lod == 0:
                 mesh = trimesh.load(
@@ -231,14 +252,14 @@ def generate_single_neuroglancer_mesh(output_path, num_workers, id, lods, origin
                 np.ceil(1.0*(end_fragment[0]-start_fragment[0])/num_workers))
 
             for x in range(start_fragment[0], end_fragment[0]+1, x_stride):
-                vx, fx = my_slice_faces_plane(
+                vx, fx = my_fast_slice_faces_plane(
                     v, f, plane_normal=-nyz, plane_origin=nyz*(x+x_stride)*current_box_size)
 
                 if len(vx) > 0:
                     results.append(generate_mesh_decomposition(
                         client.scatter(vx), client.scatter(fx), lod_0_box_size, start_fragment, end_fragment, x, x+x_stride, current_lod))
 
-                    v, f = my_slice_faces_plane(
+                    v, f = my_fast_slice_faces_plane(
                         v, f, plane_normal=nyz, plane_origin=nyz*(x+x_stride)*current_box_size)
 
             dask_results = dask.compute(* results)
@@ -268,7 +289,7 @@ if __name__ == "__main__":
     input_path = "/groups/cosem/cosem/ackermand/meshesForWebsite/res1decimation0p1/jrc_hela-1/er_seg/"
     output_path = "/groups/cosem/cosem/ackermand/meshesForWebsite/res1decimation0p1/jrc_hela-1/test_simpler_multires/"
     results = []
-    ids = list(range(1,  158))
+    ids = list(range(1,  2))
     lods = list(range(num_lods))
 
     t0 = time.time()
