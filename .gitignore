@@ -3,3 +3,4 @@ cube
 dask-worker-space/
 .vscode/
 __pycache__/
+workspace.code-workspace
