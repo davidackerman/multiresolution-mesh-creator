@@ -5,4 +5,5 @@ dask-worker-space/
 __pycache__/
 CMakeFiles/
 build/
+test_meshes_output/
 workspace.code-workspace
