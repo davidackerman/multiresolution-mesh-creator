@@ -43,7 +43,7 @@ This code assumes that you have either:
 
 To create the multiresolution mesh format required by neuroglancer, you can run `create_multiresolution_meshes.py`:
 ```
->: python create_multiresolution_meshes.py --help
+python create_multiresolution_meshes.py --help
 usage: create_multiresolution_meshes.py [-h] -i INPUT_PATH -o OUTPUT_PATH -n
                                         NUM_LODS -b BOX_SIZE [-s]
                                         [-d DECIMATION_FACTOR]
