@@ -73,12 +73,12 @@ If you already have meshes at all the desired scales in the corresponding `s0`, 
 If you only have meshes for lod 0, then you must run mesh decimation. Mesh decimation is performed using the lod 0 meshes, reducing the number of faces by a factor of `2**lod`. You can set the scaling factor to be a number other than `2`, eg. `-d 4` would cause the faces to be decimated by a factor of `4**lod`.
 
 ## Example
-Two meshes are provided in `test_meshes` as an example. These are provided at a single, lod 0 scale. To turn these single resolution meshes into neuroglancer formatted multiresolution meshes at eg. 5 levels of detail, with a box size 4 and face decimation factor 4, you would run the following:
+Two meshes are provided in `test_meshes` as an example (a bunny and a teapot). These are provided at a single, lod 0 scale. To turn these single resolution meshes into neuroglancer formatted multiresolution meshes at eg. 5 levels of detail, with a box size 4 and face decimation factor 4, you would run the following:
 ```
 python create_multiresolution_meshes.py -i test_meshes/ -o test_meshes_output/ -n 5 -b 4 -d 4
 ```
 
-The output would then be in `test_mehes_output`. You can use something like [http-server](https://www.npmjs.com/package/http-server) to serve up the files for viewing in neuroglancer. See the demo below.
+The output will be in `test_mehes_output`. You can use something like [http-server](https://www.npmjs.com/package/http-server) to serve up the files for viewing in neuroglancer. See the demo below to see the results of running the above command.
 
 ![Demo](recording/recording.gif)
 
