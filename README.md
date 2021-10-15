@@ -5,7 +5,7 @@ This repository is meant to be used to create multiresolution meshes in the [neu
 1. Clone this repository, and accompanying submodules.
 
 ```
-git clone --recursive https://github.com/davidackerman/multiresolution-mesh-creator.git
+git clone --recursive https://github.com/janelia-cosem/multiresolution-mesh-creator.git
 ```
 2. `cd` to repo directory and setup a conda environment using the provided yaml file:
 ```

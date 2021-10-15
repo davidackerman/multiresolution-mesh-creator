@@ -461,26 +461,27 @@ if __name__ == "__main__":
     # If more than 1 thread per worker, run into issues with decimation?
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("-i",
-                        "--input_path",
-                        help="Path to lod 0 meshes",
-                        type=str,
-                        required=True)
-    parser.add_argument("-o",
-                        "--output_path",
-                        help="Path to write out multires meshes",
-                        type=str,
-                        required=True)
-    parser.add_argument("-n",
-                        "--num_lods",
-                        help="Number of levels of detail",
-                        type=int,
-                        required=True)
-    parser.add_argument("-b",
-                        "--box_size",
-                        help="lod 0 box size",
-                        type=int,
-                        required=True)
+    required_name = parser.add_argument_group('Required named arguments')
+    required_name.add_argument("-i",
+                               "--input_path",
+                               help="Path to lod 0 meshes",
+                               type=str,
+                               required=True)
+    required_name.add_argument("-o",
+                               "--output_path",
+                               help="Path to write out multires meshes",
+                               type=str,
+                               required=True)
+    required_name.add_argument("-n",
+                               "--num_lods",
+                               help="Number of levels of detail",
+                               type=int,
+                               required=True)
+    required_name.add_argument("-b",
+                               "--box_size",
+                               help="lod 0 box size",
+                               type=int,
+                               required=True)
     parser.add_argument(
         "-s",
         "--skip_decimation",
