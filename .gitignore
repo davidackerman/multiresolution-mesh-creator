@@ -4,4 +4,5 @@ dask-worker-space/
 .vscode/
 __pycache__/
 CMakeFiles/
+build/
 workspace.code-workspace
