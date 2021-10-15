@@ -321,7 +321,9 @@ def generate_decimated_meshes(input_path, output_path, lods, ids, ext):
             os.makedirs(f"{output_path}/mesh_lods/", exist_ok=True)
             # link existing to s0
             if not os.path.exists(f"{output_path}/mesh_lods/s0"):
-                os.system(f"ln -s {input_path}/ {output_path}/mesh_lods/s0")
+                os.system(
+                    f"ln -s {os.path.abspath(input_path)}/ {os.path.abspath(output_path)}/mesh_lods/s0"
+                )
         else:
             os.makedirs(f"{output_path}/mesh_lods/s{current_lod}",
                         exist_ok=True)
