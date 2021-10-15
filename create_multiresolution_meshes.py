@@ -273,7 +273,7 @@ def generate_mesh_decomposition(vertices, faces, lod_0_box_size,
 
 
 @dask.delayed
-def pyfqmr_decimate(input_path, output_path, id, lod, ext):
+def pyfqmr_decimate(input_path, output_path, id, lod, ext, decimation_factor):
     """Mesh decimation using pyfqmr.
 
     Decimation is performed on a mesh located at `input_path`/`id`.`ext`. The
@@ -287,10 +287,12 @@ def pyfqmr_decimate(input_path, output_path, id, lod, ext):
         id [`int`]: The object id
         lod [`int`]: The current level of detail
         ext [`str`]: The extension of the s0 meshes.
+        decimation_factor [`int`]: The factor by which we decimate faces,
+                                   scaled by 2**lod
     """
 
     mesh = trimesh.load(f"{input_path}/{id}.{ext}")
-    desired_faces = max(len(mesh.faces) // (4**lod), 1)
+    desired_faces = max(len(mesh.faces) // (decimation_factor**lod), 1)
 
     mesh_simplifier = pyfqmr.Simplify()
     mesh_simplifier.setMesh(mesh.vertices, mesh.faces)
@@ -304,7 +306,8 @@ def pyfqmr_decimate(input_path, output_path, id, lod, ext):
     mesh.export(f"{output_path}/s{lod}/{id}.stl")
 
 
-def generate_decimated_meshes(input_path, output_path, lods, ids, ext):
+def generate_decimated_meshes(input_path, output_path, lods, ids, ext,
+                              decimation_factor):
     """Generate decimatated meshes for all ids in `ids`, over all lod in `lods`.
 
     Args:
@@ -313,6 +316,8 @@ def generate_decimated_meshes(input_path, output_path, lods, ids, ext):
         lods (`int`): Levels of detail over which to have mesh
         ids (`list`): All mesh ids
         ext (`str`): Input mesh formats.
+        decimation_fraction [`int`]: The factor by which we decimate faces,
+                                     scaled by 2**lod
     """
 
     results = []
@@ -330,7 +335,7 @@ def generate_decimated_meshes(input_path, output_path, lods, ids, ext):
             for id in ids:
                 results.append(
                     pyfqmr_decimate(input_path, f"{output_path}/mesh_lods", id,
-                                    current_lod, ext))
+                                    current_lod, ext, decimation_factor))
 
     dask.compute(*results)
 
@@ -459,32 +464,47 @@ if __name__ == "__main__":
     parser.add_argument("-i",
                         "--input_path",
                         help="Path to lod 0 meshes",
-                        type=str)
+                        type=str,
+                        required=True)
     parser.add_argument("-o",
                         "--output_path",
                         help="Path to write out multires meshes",
-                        type=str)
+                        type=str,
+                        required=True)
     parser.add_argument("-n",
                         "--num_lods",
                         help="Number of levels of detail",
-                        type=int)
-    parser.add_argument("-b", "--box_size", help="lod 0 box size", type=int)
-    parser.add_argument("-s",
-                        "--skip_decimation",
-                        help="Option to skip mesh decimation if meshes exist",
-                        type=bool)
+                        type=int,
+                        required=True)
+    parser.add_argument("-b",
+                        "--box_size",
+                        help="lod 0 box size",
+                        type=int,
+                        required=True)
+    parser.add_argument(
+        "-s",
+        "--skip_decimation",
+        help="(Optional) flag to skip mesh decimation if meshes exist",
+        action="store_true",
+        required=False)
+    parser.add_argument(
+        "-d",
+        "--decimation_factor",
+        default=2,
+        help=
+        "(Optional) factor by which to decimate faces at each lod, ie factor**lod; default is 2",
+        type=int,
+        required=False)
     args = parser.parse_args()
 
-    #input_path = "/groups/scicompsoft/home/ackermand/Programming/multiresolutionMeshes/test_meshes/"  #/groups/cosem/cosem/ackermand/meshesForWebsite/res1decimation0p05/jrc_hela-1/mito_seg/"
-    #output_path = "/groups/scicompsoft/home/ackermand/Programming/multiresolutionMeshes/test_meshes_output"  #/groups/cosem/cosem/ackermand/meshesForWebsite/res1decimation0p05/jrc_hela-1/test_simpler_multires/mito_seg/"
     input_path = args.input_path
     output_path = args.output_path
     num_lods = args.num_lods
     lod_0_box_size = args.box_size
     skip_decimation = args.skip_decimation
+    decimation_factor = args.decimation_factor
 
     lods = list(range(num_lods))
-
     mesh_files = [
         f for f in listdir(input_path) if isfile(join(input_path, f))
     ]
@@ -506,7 +526,7 @@ if __name__ == "__main__":
     if not skip_decimation:
         print_with_datetime("Generating decimated meshes...")
         generate_decimated_meshes(input_path, output_path, lods, mesh_ids,
-                                  mesh_ext)
+                                  mesh_ext, decimation_factor)
         print_with_datetime("Generated decimated meshes!")
 
     # Create multiresolution meshes
