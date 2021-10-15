@@ -118,7 +118,7 @@ def my_slice_faces_plane(vertices, faces, plane_normal, plane_origin):
 def update_fragment_dict(dictionary, fragment_pos, vertices, faces,
                          lod_0_fragment_pos):
     """Update dictionary (in place) whose keys are fragment positions and
-    whose values are `Fragments` which is a class containing the corresponding
+    whose values are `Fragment` which is a class containing the corresponding
     fragment vertices, faces and corresponding lod 0 fragment positions.
 
     This is necessary since each fragment (above lod 0) must be divisible by a

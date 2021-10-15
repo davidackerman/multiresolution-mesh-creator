@@ -11,7 +11,7 @@ class Fragment:
     def __init__(self, vertices, faces, lod_0_fragment_pos):
         self.vertices = vertices
         self.faces = faces
-        self.lod_0_fragment_pos = [lod_0_fragment_pos]
+        self.lod_0_fragment_pos = lod_0_fragment_pos
 
     def update_faces(self, new_faces):
         self.faces = np.vstack((self.faces, new_faces + len(self.vertices)))
@@ -29,7 +29,8 @@ class Fragment:
 
 
 CompressedFragment = namedtuple(
-    'Fragment', ['draco_bytes', 'position', 'offset', 'lod_0_positions'])
+    'CompressedFragment',
+    ['draco_bytes', 'position', 'offset', 'lod_0_positions'])
 
 
 def _cmp_zorder(lhs, rhs) -> bool:
