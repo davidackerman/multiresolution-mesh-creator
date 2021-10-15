@@ -1,3 +1,6 @@
 [submodule "pyfqmr-Fast-Quadric-Mesh-Reduction"]
 	path = pyfqmr-Fast-Quadric-Mesh-Reduction
 	url = https://github.com/Kramer84/pyfqmr-Fast-Quadric-Mesh-Reduction.git
+[submodule "dvidutils"]
+	path = dvidutils
+	url = https://github.com/davidackerman/dvidutils
