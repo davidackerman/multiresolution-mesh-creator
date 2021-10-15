@@ -1,13 +1,10 @@
 import trimesh
 from trimesh.intersections import slice_faces_plane
 import numpy as np
-from io_utils import stdout_redirected
 from dvidutils import encode_faces_to_custom_drc_bytes
 import dask
 import utils
 import time
-import openmesh as om
-import sys
 import os
 import pyfqmr
 from dask.distributed import Client, worker_client
@@ -79,6 +76,7 @@ def my_fast_slice_faces_plane(vertices, faces, triangles, max_edge_length,
     Returns:
         v, f: Vertices and faces
     """
+
     if len(vertices) > 0:
         vertices, faces = get_faces_within_slice(vertices, faces, triangles,
                                                  max_edge_length, plane_normal,
@@ -103,6 +101,7 @@ def my_slice_faces_plane(vertices, faces, plane_normal, plane_origin):
     Returns:
         vertices, faces: Vertices and faces
     """
+
     if len(vertices) > 0 and len(faces) > 0:
         try:
             vertices, faces = slice_faces_plane(vertices, faces, plane_normal,
@@ -120,8 +119,9 @@ def update_fragment_dict(dictionary, fragment_pos, vertices, faces,
                          lod_0_fragment_pos):
     """Update dictionary (in place) whose keys are fragment positions and
     whose values are `Fragments` which is a class containing the corresponding
-    fragment vertices, faces and corresponding lod 0 fragment positions. This
-    is necessary since each fragment (above lod 0) must be divisible by a
+    fragment vertices, faces and corresponding lod 0 fragment positions.
+
+    This is necessary since each fragment (above lod 0) must be divisible by a
     2x2x2 grid. So each fragment is technically split into many "subfragments".
     Thus the dictionary is used to map all subfragments to the proper parent
     fragment. The lod 0 fragment positions are used when writing out the index
@@ -170,6 +170,7 @@ def generate_mesh_decomposition(vertices, faces, lod_0_box_size,
     Returns:
         fragments: List of `CompressedFragments` (named tuple)
     """
+
     combined_fragments_dictionary = {}
     fragments = []
 
@@ -242,39 +243,6 @@ def generate_mesh_decomposition(vertices, faces, lod_0_box_size,
     return fragments
 
 
-def decimate(v, f, fraction):
-    target = max(4, int(fraction * len(v)))
-
-    try:
-        sys.stderr.fileno()
-    except:
-        # Can't redirect stderr if it has no file descriptor.
-        # Just let the output spill to wherever it's going.
-        m = om.TriMesh(v, f)
-    else:
-        # Hide stderr, since OpenMesh construction is super noisy.
-        with stdout_redirected(stdout=sys.stderr):
-            m = om.TriMesh(v, f)
-
-        h = om.TriMeshModQuadricHandle()
-        d = om.TriMeshDecimater(m)
-        d.add(h)
-        d.module(h).unset_max_err()
-        d.initialize()
-
-        print(
-            f"Attempting to decimate to {target} (Reduce by {len(v) - target})"
-        )
-        eliminated_count = d.decimate_to(target)
-        print(f"Reduced by {eliminated_count}")
-        m.garbage_collection()
-
-    v = m.points().astype(np.float32)
-    f = m.face_vertex_indices().astype(np.uint32)
-
-    return v, f
-
-
 @dask.delayed
 def pyfqmr_decimate(input_path, output_path, id, lod, ext):
     """Mesh decimation using pyfqmr.
@@ -317,6 +285,7 @@ def generate_decimated_meshes(input_path, output_path, lods, ids, ext):
         ids (`list`): All mesh ids
         ext (`str`): Input mesh formats.
     """
+
     for current_lod in lods:
         if current_lod == 0:
             os.makedirs(f"{output_path}", exist_ok=True)
@@ -352,6 +321,7 @@ def generate_neuroglancer_multires_mesh(output_path, num_workers, id, lods,
         original_ext (`str`): Original mesh file extension
         lod_0_box_size (`int`): Box size in lod 0 coordinates
     """
+
     with worker_client() as client:
         os.system(f"rm -rf {output_path}/{id} {output_path}/{id}.index")
 
@@ -426,6 +396,7 @@ def generate_all_neuroglancer_multires_meshes(output_path, num_workers, ids,
         original_ext (`str`): Original mesh file extension
         lod_0_box_size (`int`): Box size in lod 0 coordinates
     """
+
     results = []
     for id in ids:
         results.append(
