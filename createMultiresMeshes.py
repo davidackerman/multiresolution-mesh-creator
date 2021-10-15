@@ -11,7 +11,7 @@ import sys
 import os
 import pyfqmr
 from dask.distributed import Client, worker_client
-from utils import Fragment
+from utils import Fragment, CompressedFragment
 from numba import jit
 
 
@@ -33,8 +33,10 @@ def get_faces_within_slice(vertices, faces, triangles, max_edge_length,
     Returns:
         vertices, faces: Vertices and faces within region
     """
+
     axis = np.where(plane_normal != 0)[0][0]
     plane_origin = plane_origin[axis]
+
     if np.any(plane_normal < 0):
         plane_origin = plane_origin + max_edge_length
         faces_in_range = np.where((triangles[:, 0 + axis] <= plane_origin)
@@ -49,14 +51,12 @@ def get_faces_within_slice(vertices, faces, triangles, max_edge_length,
     faces_in_range = faces_in_range[0]
     faces = faces[faces_in_range].reshape(-1)
 
-    vertices_unq = np.unique(
-        faces)  # Numba doesn't support return_inverse argument
+    vertices_unq = np.unique(faces)  # Numba doesn't support return_inverse
     vertices_renumbering_dict = {}
     for idx, vertex_unq_idx in enumerate(vertices_unq):
         vertices_renumbering_dict[vertex_unq_idx] = idx
 
     faces = np.array([vertices_renumbering_dict[v_idx] for v_idx in faces])
-
     vertices = vertices[vertices_unq]
 
     faces = faces.reshape(-1, 3)
@@ -65,7 +65,7 @@ def get_faces_within_slice(vertices, faces, triangles, max_edge_length,
 
 def my_fast_slice_faces_plane(vertices, faces, triangles, max_edge_length,
                               plane_normal, plane_origin):
-    """slice_faces_plane but with numba optimized prestep
+    """`slice_faces_plane` but with numba optimized prestep
     to get faces within slice. Ideally would speed up code.
 
     Args:
@@ -116,39 +116,75 @@ def my_slice_faces_plane(vertices, faces, plane_normal, plane_origin):
     return vertices, faces
 
 
-def update_fragment_dict(dictionary, fragment_pos, vertices, faces, lod_0_fragment_pos):
+def update_fragment_dict(dictionary, fragment_pos, vertices, faces,
+                         lod_0_fragment_pos):
+    """Update dictionary (in place) whose keys are fragment positions and
+    whose values are `Fragments` which is a class containing the corresponding
+    fragment vertices, faces and corresponding lod 0 fragment positions. This
+    is necessary since each fragment (above lod 0) must be divisible by a
+    2x2x2 grid. So each fragment is technically split into many "subfragments".
+    Thus the dictionary is used to map all subfragments to the proper parent
+    fragment. The lod 0 fragment positions are used when writing out the index
+    files because if a subfragment is empty it still needs to be included in
+    the index file. By tracking all the corresponding lod 0 fragments of a
+    given lod fragment, we can ensure that all necessary empty fragments are
+    included.
+
+    Args:
+        dictionary: Dictionary of fragment pos keys and fragment info values
+        fragment_pos: Current lod fragment position
+        vertices: Vertices
+        faces: Faces
+        lod_0_fragment_pos: Corresponding lod 0 fragment positions
+                            corresponding to fragment_pos
+    """
+
     if fragment_pos in dictionary:
-        [vertices_combined, faces_combined,
-         lod_0_fragment_pos_combined] = dictionary[fragment_pos]
-
-        faces_combined = np.vstack(
-            (faces_combined, faces + len(vertices_combined)))
-        vertices_combined = np.vstack((vertices_combined, vertices))
-        lod_0_fragment_pos_combined.append(fragment_pos)
-
-        dictionary[fragment_pos] = [
-            vertices_combined, faces_combined, lod_0_fragment_pos_combined
-        ]
+        fragment = dictionary[fragment_pos]
+        fragment.update(vertices, faces, lod_0_fragment_pos)
+        dictionary[fragment_pos] = fragment
     else:
-        dictionary[fragment_pos] = [vertices, faces, [lod_0_fragment_pos]]
+        dictionary[fragment_pos] = Fragment(vertices, faces,
+                                            [lod_0_fragment_pos])
 
 
 @dask.delayed
 def generate_mesh_decomposition(vertices, faces, lod_0_box_size,
                                 start_fragment, end_fragment, x_start, x_end,
                                 current_lod):
+    """Dask delayed function to decompose a mesh, provided as vertices and
+    faces, into fragments of size lod_0_box_size * 2**current_lod. Each
+    fragment is also subdivided by 2x2x2. This is performed over a limited
+    xrange in order to parallelize via dask.
+
+    Args:
+        vertices: Vertices
+        faces: Faces
+        lod_0_box_size: Base chunk shape
+        start_fragment: Start fragment position (x,y,z)
+        end_fragment: End fragment position (x,y,z)
+        x_start: Starting x position for this dask task
+        x_end: Ending x position for this dask task
+        current_lod: The current level of detail
+
+    Returns:
+        fragments: List of `CompressedFragments` (named tuple)
+    """
     combined_fragments_dictionary = {}
     fragments = []
 
     nyz, nxz, nxy = np.eye(3)
 
     if current_lod != 0:
-        sub_box_size = lod_0_box_size * 2**(current_lod - 1)
-        # Want each chunk for lod>0 to be divisible by 2x2x2 region, so multiply by 2
+        # Want each chunk for lod>0 to be divisible by 2x2x2 region,
+        # so multiply coordinates by 2
         start_fragment *= 2
         end_fragment *= 2
         x_start *= 2
         x_end *= 2
+
+        # 2x2x2 subdividing box size
+        sub_box_size = lod_0_box_size * 2**(current_lod - 1)
     else:
         sub_box_size = lod_0_box_size
 
@@ -167,15 +203,15 @@ def generate_mesh_decomposition(vertices, faces, lod_0_box_size,
                 vertices_xy, faces_xy = my_slice_faces_plane(
                     vertices_xz, faces_xz, -nxy, plane_origin_xy)
 
-                lod_0_fragment_position = tuple(np.asarray([x, y, z]))
+                lod_0_fragment_position = tuple(np.array([x, y, z]))
                 if current_lod != 0:
-                    fragment_position = tuple(np.asarray([x, y, z]) // 2)
+                    fragment_position = tuple(np.array([x, y, z]) // 2)
                 else:
                     fragment_position = lod_0_fragment_position
 
-                update_fragment_dict(
-                    combined_fragments_dictionary, fragment_position,
-                    vertices_xy, faces_xy, list(lod_0_fragment_position))
+                update_fragment_dict(combined_fragments_dictionary,
+                                     fragment_position, vertices_xy, faces_xy,
+                                     list(lod_0_fragment_position))
 
                 vertices_xz, faces_xz = my_slice_faces_plane(
                     vertices_xz, faces_xz, nxy, plane_origin_xy)
@@ -187,21 +223,20 @@ def generate_mesh_decomposition(vertices, faces, lod_0_box_size,
                                                plane_origin_yz)
 
     # return combined_fragments_dictionary
-    for fragment_origin, [vertices, faces, lod_0_fragment_positions
-                          ] in combined_fragments_dictionary.items():
+    for fragment_pos, fragment in combined_fragments_dictionary.items():
         current_box_size = lod_0_box_size * 2**current_lod
         draco_bytes = encode_faces_to_custom_drc_bytes(
-            vertices,
-            np.zeros(np.shape(vertices)),
-            faces,
+            fragment.vertices,
+            np.zeros(np.shape(fragment.vertices)),
+            fragment.faces,
             np.asarray(3 * [current_box_size]),
-            np.asarray(fragment_origin) * current_box_size,
+            np.asarray(fragment_pos) * current_box_size,
             position_quantization_bits=10)
 
         if len(draco_bytes) > 12:
-            fragment = Fragment(draco_bytes, np.asarray(fragment_origin),
-                                len(draco_bytes),
-                                np.asarray(lod_0_fragment_positions))
+            fragment = CompressedFragment(
+                draco_bytes, np.asarray(fragment_pos), len(draco_bytes),
+                np.asarray(fragment.lod_0_fragment_pos))
             fragments.append(fragment)
 
     return fragments
@@ -242,6 +277,21 @@ def decimate(v, f, fraction):
 
 @dask.delayed
 def pyfqmr_decimate(input_path, output_path, id, lod, ext):
+    """Mesh decimation using pyfqmr.
+
+    Decimation is performed on a mesh located at `input_path`/`id`.`ext`. The
+    target number of faces is 1/2**`lod` of the current number of faces. The
+    mesh is written to an stl file in `output_path`/s`lod`/`id`.stl. This
+    utilizes `dask.delayed`.
+
+    Args:
+        input_path [`str`]: The input path for s0 meshes
+        output_path [`str`]: The output path
+        id [`int`]: The object id
+        lod [`int`]: The current level of detail
+        ext [`str`]: The extension of the s0 meshes.
+    """
+
     mesh = trimesh.load(f"{input_path}/{id}.{ext}")
     desired_faces = max(len(mesh.faces) // (2**lod), 1)
 
@@ -257,7 +307,16 @@ def pyfqmr_decimate(input_path, output_path, id, lod, ext):
     mesh.export(f"{output_path}/s{lod}/{id}.stl")
 
 
-def generate_multiscale_meshes(input_path, output_path, lods, ids, ext):
+def generate_decimated_meshes(input_path, output_path, lods, ids, ext):
+    """Generate decimatated meshes for all ids in `ids`, over all lod in `lods`.
+
+    Args:
+        input_path (`str`): Input mesh paths
+        output_path (`str`): Output mesh paths
+        lods (`int`): Levels of detail over which to have mesh
+        ids (`list`): All mesh ids
+        ext (`str`): Input mesh formats.
+    """
     for current_lod in lods:
         if current_lod == 0:
             os.makedirs(f"{output_path}", exist_ok=True)
@@ -274,29 +333,31 @@ def generate_multiscale_meshes(input_path, output_path, lods, ids, ext):
     dask.compute(*results)
 
 
-def generate_all_neuroglancer_meshes(output_path, num_workers, ids, lods,
-                                     original_ext):
-    results = []
-    for id in ids:
-        results.append(
-            generate_single_neuroglancer_mesh(output_path, num_workers, id,
-                                              lods, original_ext))
-
-    dask.compute(*results)
-
-
 @dask.delayed
-def generate_single_neuroglancer_mesh(output_path, num_workers, id, lods,
-                                      original_ext):
+def generate_neuroglancer_multires_mesh(output_path, num_workers, id, lods,
+                                        original_ext, lod_0_box_size):
+    """Dask delayed function to generate multiresolution mesh in neuroglancer
+    mesh format using prewritten meshes at different levels of detail.
 
+    This function generates the neuroglancer mesh for a single mesh, and
+    parallelizes the mesh creation over `num_workers` by splitting the mesh in
+    the x-direciton into `num_workers` fragments, each of which is sent to a
+    a worker to be further subdivided.
+
+    Args:
+        output_path (`str`): Output path to write out neuroglancer mesh
+        num_workers (`int`): Number of workers for dask
+        id (`int`): Mesh id
+        lods (`list`): List of levels of detail
+        original_ext (`str`): Original mesh file extension
+        lod_0_box_size (`int`): Box size in lod 0 coordinates
+    """
     with worker_client() as client:
         os.system(f"rm -rf {output_path}/{id} {output_path}/{id}.index")
 
         nyz, _, _ = np.eye(3)
 
         mesh = []
-
-        lod_0_box_size = 64 * 4
         results = []
 
         for idx, current_lod in enumerate(lods):
@@ -306,39 +367,34 @@ def generate_single_neuroglancer_mesh(output_path, num_workers, id, lods,
             else:
                 mesh = trimesh.load(f"{output_path}/s{current_lod}/{id}.stl")
 
-            v = mesh.vertices
-            f = mesh.faces
+            vertices = mesh.vertices
+            faces = mesh.faces
 
             current_box_size = lod_0_box_size * 2**current_lod
             start_fragment = np.maximum(
-                v.min(axis=0) // current_box_size - 1,
+                vertices.min(axis=0) // current_box_size - 1,
                 np.array([0, 0, 0])).astype(int)
-            end_fragment = (v.max(axis=0) // current_box_size + 1).astype(int)
+            end_fragment = (vertices.max(axis=0) // current_box_size +
+                            1).astype(int)
             x_stride = int(
                 np.ceil(1.0 * (end_fragment[0] - start_fragment[0]) /
                         num_workers))
 
             for x in range(start_fragment[0], end_fragment[0] + 1, x_stride):
-                vx, fx = my_slice_faces_plane(
-                    v,
-                    f,
-                    plane_normal=-nyz,
-                    plane_origin=nyz * (x + x_stride) * current_box_size)
+                plane_origin_yz = nyz * (x + x_stride) * current_box_size
+                vertices_yz, faces_yz = my_slice_faces_plane(
+                    vertices, faces, -nyz, plane_origin_yz)
 
-                if len(vx) > 0:
+                if len(vertices_yz) > 0:
                     results.append(
-                        generate_mesh_decomposition(client.scatter(vx),
-                                                    client.scatter(fx),
-                                                    lod_0_box_size,
-                                                    start_fragment,
-                                                    end_fragment, x,
-                                                    x + x_stride, current_lod))
+                        generate_mesh_decomposition(
+                            client.scatter(vertices_yz),
+                            client.scatter(faces_yz), lod_0_box_size,
+                            start_fragment, end_fragment, x, x + x_stride,
+                            current_lod))
 
-                    v, f = my_slice_faces_plane(
-                        v,
-                        f,
-                        plane_normal=nyz,
-                        plane_origin=nyz * (x + x_stride) * current_box_size)
+                    vertices, faces = my_slice_faces_plane(
+                        vertices, faces, nyz, plane_origin_yz)
 
             dask_results = dask.compute(*results)
 
@@ -354,6 +410,30 @@ def generate_single_neuroglancer_mesh(output_path, num_workers, id, lods,
                 np.asarray([lod_0_box_size, lod_0_box_size, lod_0_box_size]))
 
     print(f"Completed id {id}!")
+
+
+def generate_all_neuroglancer_multires_meshes(output_path, num_workers, ids,
+                                              lods, original_ext,
+                                              lod_0_box_size):
+    """Generate all neuroglancer multiresolution meshes for `ids`. Calls dask
+    delayed function `generate_neuroglancer_multires_mesh` for each id.
+
+    Args:
+        output_path (`str`): Output path to write out neuroglancer mesh
+        num_workers (`int`): Number of workers for dask
+        ids (`list`): List of mesh ids
+        lods (`list`): List of levels of detail
+        original_ext (`str`): Original mesh file extension
+        lod_0_box_size (`int`): Box size in lod 0 coordinates
+    """
+    results = []
+    for id in ids:
+        results.append(
+            generate_neuroglancer_multires_mesh(output_path, num_workers, id,
+                                                lods, original_ext,
+                                                lod_0_box_size))
+
+    dask.compute(*results)
 
 
 if __name__ == "__main__":
@@ -375,8 +455,9 @@ if __name__ == "__main__":
     lods = list(range(num_lods))
 
     t0 = time.time()
-    generate_all_neuroglancer_meshes(
-        output_path, num_workers, ids, lods, "obj")
+    lod_0_box_size = 64 * 4
+    generate_all_neuroglancer_multires_meshes(output_path, num_workers, ids,
+                                              lods, "obj", lod_0_box_size)
     #print(time.time()-t0)
     dask_results = dask.compute(*results)
     utils.write_segment_properties_file(output_path)

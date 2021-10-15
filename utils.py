@@ -1,4 +1,3 @@
-from struct import *
 import numpy as np
 from functools import cmp_to_key
 import struct
@@ -7,9 +6,29 @@ import json
 import glob
 from collections import namedtuple
 
-import sys
 
-Fragment = namedtuple(
+class Fragment:
+    def __init__(self, vertices, faces, lod_0_fragment_pos):
+        self.vertices = vertices
+        self.faces = faces
+        self.lod_0_fragment_pos = [lod_0_fragment_pos]
+
+    def update_faces(self, new_faces):
+        self.faces = np.vstack((self.faces, new_faces + len(self.vertices)))
+
+    def update_vertices(self, new_vertices):
+        self.vertices = np.vstack((self.vertices, new_vertices))
+
+    def update_lod_0_fragment_pos(self, new_lod_0_fragment_pos):
+        self.lod_0_fragment_pos.append(new_lod_0_fragment_pos)
+
+    def update(self, new_vertices, new_faces, new_lod_0_fragment_pos):
+        self.update_faces(new_faces)
+        self.update_vertices(new_vertices)
+        self.update_lod_0_fragment_pos(new_lod_0_fragment_pos)
+
+
+CompressedFragment = namedtuple(
     'Fragment', ['draco_bytes', 'position', 'offset', 'lod_0_positions'])
 
 
@@ -31,11 +50,10 @@ def _cmp_zorder(lhs, rhs) -> bool:
 
 
 def rewrite_index_with_empty_fragments(path, current_lod_fragments):
-
     def unpack_and_remove(datatype, num_elements, file_content):
-        datatype = datatype*num_elements
-        output = struct.unpack(datatype, file_content[0:4*num_elements])
-        file_content = file_content[4*num_elements:]
+        datatype = datatype * num_elements
+        output = struct.unpack(datatype, file_content[0:4 * num_elements])
+        file_content = file_content[4 * num_elements:]
         return np.array(output), file_content
 
     # index file contains info from all previous lods
@@ -47,8 +65,8 @@ def rewrite_index_with_empty_fragments(path, current_lod_fragments):
     num_lods, file_content = unpack_and_remove("I", 1, file_content)
     num_lods = num_lods[0]
     lod_scales, file_content = unpack_and_remove("f", num_lods, file_content)
-    vertex_offsets, file_content = unpack_and_remove(
-        "f", num_lods*3, file_content)
+    vertex_offsets, file_content = unpack_and_remove("f", num_lods * 3,
+                                                     file_content)
     num_fragments_per_lod, file_content = unpack_and_remove(
         "I", num_lods, file_content)
     all_current_fragment_positions = []
@@ -56,7 +74,7 @@ def rewrite_index_with_empty_fragments(path, current_lod_fragments):
 
     for lod in range(num_lods):
         fragment_positions, file_content = unpack_and_remove(
-            "I", num_fragments_per_lod[lod]*3, file_content)
+            "I", num_fragments_per_lod[lod] * 3, file_content)
         fragment_positions = fragment_positions.reshape((3, -1)).T
         fragment_offsets, file_content = unpack_and_remove(
             "I", num_fragments_per_lod[lod], file_content)
@@ -67,7 +85,8 @@ def rewrite_index_with_empty_fragments(path, current_lod_fragments):
     current_lod = num_lods
     num_lods += 1
     all_current_fragment_positions.append(
-        np.asarray([fragment.position for fragment in current_lod_fragments]).astype(int))
+        np.asarray([fragment.position
+                    for fragment in current_lod_fragments]).astype(int))
     all_current_fragment_offsets.append(
         [fragment.offset for fragment in current_lod_fragments])
 
@@ -80,7 +99,9 @@ def rewrite_index_with_empty_fragments(path, current_lod_fragments):
             # add those that are required based on lower lods
             for lower_lod in range(lod):
                 all_required_fragment_positions_np = np.unique(
-                    all_current_fragment_positions[lower_lod]//2**(lod-lower_lod), axis=0).astype(int)
+                    all_current_fragment_positions[lower_lod] //
+                    2**(lod - lower_lod),
+                    axis=0).astype(int)
                 all_required_fragment_positions.update(
                     set(map(tuple, all_required_fragment_positions_np)))
         else:
@@ -88,7 +109,7 @@ def rewrite_index_with_empty_fragments(path, current_lod_fragments):
             for fragment in current_lod_fragments:
                 # normally we would just do the following with -0 and +1, but because of quantization that occurs(?), this makes things extra conservative so we don't miss things
                 # ensures that it is positive, otherwise wound up with -1 to uint, causing errors
-                new_required_fragment_positions = fragment.lod_0_positions//2**lod
+                new_required_fragment_positions = fragment.lod_0_positions // 2**lod
                 all_required_fragment_positions.update(
                     set(map(tuple, new_required_fragment_positions)))
         current_missing_fragment_positions = all_required_fragment_positions - \
@@ -102,15 +123,18 @@ def rewrite_index_with_empty_fragments(path, current_lod_fragments):
     for lod in range(num_lods):
         if len(all_missing_fragment_positions[lod]) > 0:
             lod_fragment_positions = list(
-                all_missing_fragment_positions[lod]) + list(all_current_fragment_positions[lod])
-            lod_fragment_offsets = list(np.zeros(
-                len(all_missing_fragment_positions[lod]))) + all_current_fragment_offsets[lod]
+                all_missing_fragment_positions[lod]) + list(
+                    all_current_fragment_positions[lod])
+            lod_fragment_offsets = list(
+                np.zeros(len(all_missing_fragment_positions[lod]))
+            ) + all_current_fragment_offsets[lod]
         else:
             lod_fragment_positions = all_current_fragment_positions[lod]
             lod_fragment_offsets = all_current_fragment_offsets[lod]
 
         lod_fragment_offsets, lod_fragment_positions = zip(
-            *sorted(zip(lod_fragment_offsets, lod_fragment_positions), key=cmp_to_key(lambda x, y: _cmp_zorder(x[1], y[1]))))
+            *sorted(zip(lod_fragment_offsets, lod_fragment_positions),
+                    key=cmp_to_key(lambda x, y: _cmp_zorder(x[1], y[1]))))
         all_fragment_positions.append(lod_fragment_positions)
         all_fragment_offsets.append(lod_fragment_offsets)
         num_fragments_per_lod.append(len(all_fragment_offsets[lod]))
@@ -129,8 +153,8 @@ def rewrite_index_with_empty_fragments(path, current_lod_fragments):
         f.write(num_fragments_per_lod.astype('<I').tobytes())
 
         for lod in range(num_lods):
-            fragment_positions = np.array(
-                all_fragment_positions[lod]).reshape(-1, 3)
+            fragment_positions = np.array(all_fragment_positions[lod]).reshape(
+                -1, 3)
             fragment_offsets = np.array(all_fragment_offsets[lod]).reshape(-1)
 
             f.write(fragment_positions.T.astype('<I').tobytes(order='C'))
@@ -149,7 +173,6 @@ def write_info_file(path):
             'transform': [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0],
             'lod_scale_multiplier': 1,
             'segment_properties': "segment_properties"
-
         }
 
         json.dump(info, f)
@@ -161,17 +184,20 @@ def write_segment_properties_file(path):
         os.makedirs(segment_properties_directory)
 
     with open(f"{segment_properties_directory}/info", 'w') as f:
-        ids = [index_file.split("/")[-1].split(".")[0]
-               for index_file in glob.glob(f'{path}/*.index')]
+        ids = [
+            index_file.split("/")[-1].split(".")[0]
+            for index_file in glob.glob(f'{path}/*.index')
+        ]
         ids.sort(key=int)
         info = {
             "@type": "neuroglancer_segment_properties",
             "inline": {
-                "ids": ids,
+                "ids":
+                ids,
                 "properties": [{
                     "id": "label",
                     "type": "label",
-                    "values": [""]*len(ids)
+                    "values": [""] * len(ids)
                 }]
             }
         }
@@ -180,8 +206,9 @@ def write_segment_properties_file(path):
 
 def zorder_fragments(fragments):
 
-    fragments, _ = zip(*sorted(
-        zip(fragments, [fragment.position for fragment in fragments]), key=cmp_to_key(lambda x, y: _cmp_zorder(x[1], y[1]))))
+    fragments, _ = zip(
+        *sorted(zip(fragments, [fragment.position for fragment in fragments]),
+                key=cmp_to_key(lambda x, y: _cmp_zorder(x[1], y[1]))))
     return list(fragments)
 
 
@@ -204,10 +231,12 @@ def write_index_file(path, fragments, current_lod, lods, chunk_shape):
             f.write(lod_scales.astype('<f').tobytes())
             f.write(vertex_offsets.astype('<f').tobytes(order='C'))
             f.write(num_fragments_per_lod.astype('<I').tobytes())
-            f.write(np.asarray([fragment.position for fragment in fragments]).T.astype(
-                '<I').tobytes(order='C'))
-            f.write(np.asarray([fragment.offset for fragment in fragments]).astype(
-                '<I').tobytes(order='C'))
+            f.write(
+                np.asarray([fragment.position for fragment in fragments
+                            ]).T.astype('<I').tobytes(order='C'))
+            f.write(
+                np.asarray([fragment.offset for fragment in fragments
+                            ]).astype('<I').tobytes(order='C'))
 
     else:
         rewrite_index_with_empty_fragments(path, fragments)
@@ -217,15 +246,16 @@ def write_mesh_file(path, fragments):
     with open(path, 'ab') as f:
         for idx, fragment in enumerate(fragments):
             f.write(fragment.draco_bytes)
-            fragments[idx] = Fragment(
-                None, fragment.position, fragment.offset, fragment.lod_0_positions)
+            fragments[idx] = CompressedFragment(None, fragment.position,
+                                                fragment.offset,
+                                                fragment.lod_0_positions)
 
     return fragments
 
 
-def write_mesh_files(mesh_directory, object_id, fragments, current_lod, lods, chunk_shape):
+def write_mesh_files(mesh_directory, object_id, fragments, current_lod, lods,
+                     chunk_shape):
     path = mesh_directory + "/" + object_id
     fragments = zorder_fragments(fragments)
     fragments = write_mesh_file(path, fragments)
-    write_index_file(path, fragments, current_lod,
-                     lods, chunk_shape)
+    write_index_file(path, fragments, current_lod, lods, chunk_shape)
