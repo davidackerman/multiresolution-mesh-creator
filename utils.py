@@ -6,28 +6,6 @@ import json
 import glob
 from collections import namedtuple
 
-
-class Fragment:
-    def __init__(self, vertices, faces, lod_0_fragment_pos):
-        self.vertices = vertices
-        self.faces = faces
-        self.lod_0_fragment_pos = lod_0_fragment_pos
-
-    def update_faces(self, new_faces):
-        self.faces = np.vstack((self.faces, new_faces + len(self.vertices)))
-
-    def update_vertices(self, new_vertices):
-        self.vertices = np.vstack((self.vertices, new_vertices))
-
-    def update_lod_0_fragment_pos(self, new_lod_0_fragment_pos):
-        self.lod_0_fragment_pos.append(new_lod_0_fragment_pos)
-
-    def update(self, new_vertices, new_faces, new_lod_0_fragment_pos):
-        self.update_faces(new_faces)
-        self.update_vertices(new_vertices)
-        self.update_lod_0_fragment_pos(new_lod_0_fragment_pos)
-
-
 CompressedFragment = namedtuple(
     'CompressedFragment',
     ['draco_bytes', 'position', 'offset', 'lod_0_positions'])

@@ -6,10 +6,39 @@ import dask
 import utils
 import time
 import os
+from os import listdir
+from os.path import isfile, join, splitext
 import pyfqmr
 from dask.distributed import Client, worker_client
-from utils import Fragment, CompressedFragment
+from utils import CompressedFragment
 from numba import jit
+import multiprocessing
+from datetime import datetime
+import argparse
+
+
+class Fragment:
+    """Fragment class used to store and update fragment chunk vertices, faces
+    and corresponding lod 0 fragments
+    """
+    def __init__(self, vertices, faces, lod_0_fragment_pos):
+        self.vertices = vertices
+        self.faces = faces
+        self.lod_0_fragment_pos = lod_0_fragment_pos
+
+    def update_faces(self, new_faces):
+        self.faces = np.vstack((self.faces, new_faces + len(self.vertices)))
+
+    def update_vertices(self, new_vertices):
+        self.vertices = np.vstack((self.vertices, new_vertices))
+
+    def update_lod_0_fragment_pos(self, new_lod_0_fragment_pos):
+        self.lod_0_fragment_pos.append(new_lod_0_fragment_pos)
+
+    def update(self, new_vertices, new_faces, new_lod_0_fragment_pos):
+        self.update_faces(new_faces)
+        self.update_vertices(new_vertices)
+        self.update_lod_0_fragment_pos(new_lod_0_fragment_pos)
 
 
 @jit(nopython=True)
@@ -62,8 +91,8 @@ def get_faces_within_slice(vertices, faces, triangles, max_edge_length,
 
 def my_fast_slice_faces_plane(vertices, faces, triangles, max_edge_length,
                               plane_normal, plane_origin):
-    """`slice_faces_plane` but with numba optimized prestep
-    to get faces within slice. Ideally would speed up code.
+    """`slice_faces_plane` but with numba optimized prestep to get faces
+    within slice. Ideally would speed up code.
 
     Args:
         vertices: Mesh vertices
@@ -261,7 +290,7 @@ def pyfqmr_decimate(input_path, output_path, id, lod, ext):
     """
 
     mesh = trimesh.load(f"{input_path}/{id}.{ext}")
-    desired_faces = max(len(mesh.faces) // (2**lod), 1)
+    desired_faces = max(len(mesh.faces) // (4**lod), 1)
 
     mesh_simplifier = pyfqmr.Simplify()
     mesh_simplifier.setMesh(mesh.vertices, mesh.faces)
@@ -286,18 +315,20 @@ def generate_decimated_meshes(input_path, output_path, lods, ids, ext):
         ext (`str`): Input mesh formats.
     """
 
+    results = []
     for current_lod in lods:
         if current_lod == 0:
-            os.makedirs(f"{output_path}", exist_ok=True)
+            os.makedirs(f"{output_path}/mesh_lods/", exist_ok=True)
             # link existing to s0
-            if not os.path.exists(f"{output_path}/s0"):
-                os.system(f"ln -s {input_path}/ {output_path}/s0")
+            if not os.path.exists(f"{output_path}/mesh_lods/s0"):
+                os.system(f"ln -s {input_path}/ {output_path}/mesh_lods/s0")
         else:
-            os.makedirs(f"{output_path}/s{current_lod}", exist_ok=True)
+            os.makedirs(f"{output_path}/mesh_lods/s{current_lod}",
+                        exist_ok=True)
             for id in ids:
                 results.append(
-                    pyfqmr_decimate(input_path, output_path, id, current_lod,
-                                    ext))
+                    pyfqmr_decimate(input_path, f"{output_path}/mesh_lods", id,
+                                    current_lod, ext))
 
     dask.compute(*results)
 
@@ -323,7 +354,10 @@ def generate_neuroglancer_multires_mesh(output_path, num_workers, id, lods,
     """
 
     with worker_client() as client:
-        os.system(f"rm -rf {output_path}/{id} {output_path}/{id}.index")
+        os.makedirs(f"{output_path}/multires", exist_ok=True)
+        os.system(
+            f"rm -rf {output_path}/multires/{id} {output_path}/multires/{id}.index"
+        )
 
         nyz, _, _ = np.eye(3)
 
@@ -333,9 +367,11 @@ def generate_neuroglancer_multires_mesh(output_path, num_workers, id, lods,
         for idx, current_lod in enumerate(lods):
             if current_lod == 0:
                 mesh = trimesh.load(
-                    f"{output_path}/s{current_lod}/{id}.{original_ext}")
+                    f"{output_path}/mesh_lods/s{current_lod}/{id}.{original_ext}"
+                )
             else:
-                mesh = trimesh.load(f"{output_path}/s{current_lod}/{id}.stl")
+                mesh = trimesh.load(
+                    f"{output_path}/mesh_lods/s{current_lod}/{id}.stl")
 
             vertices = mesh.vertices
             faces = mesh.faces
@@ -376,10 +412,11 @@ def generate_neuroglancer_multires_mesh(output_path, num_workers, id, lods,
             results = []
             dask_results = []
             utils.write_mesh_files(
-                output_path, f"{id}", fragments, current_lod, lods[:idx + 1],
+                f"{output_path}/multires", f"{id}", fragments, current_lod,
+                lods[:idx + 1],
                 np.asarray([lod_0_box_size, lod_0_box_size, lod_0_box_size]))
 
-    print(f"Completed id {id}!")
+    print(f"Completed creation of neuroglancer mesh for mesh {id}!")
 
 
 def generate_all_neuroglancer_multires_meshes(output_path, num_workers, ids,
@@ -407,34 +444,81 @@ def generate_all_neuroglancer_multires_meshes(output_path, num_workers, ids,
     dask.compute(*results)
 
 
+def print_with_datetime(output):
+    now = datetime.now().strftime("%Y/%m/%d %H:%M:%S")
+    print(f"{now}: {output}")
+
+
 if __name__ == "__main__":
 
     # If more than 1 thread per worker, run into issues with decimation?
 
-    num_workers = 20  # for creating meshes
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-i",
+                        "--input_path",
+                        help="Path to lod 0 meshes",
+                        type=str)
+    parser.add_argument("-o",
+                        "--output_path",
+                        help="Path to write out multires meshes",
+                        type=str)
+    parser.add_argument("-n",
+                        "--num_lods",
+                        help="Number of levels of detail",
+                        type=int)
+    parser.add_argument("-b", "--box_size", help="lod 0 box size", type=int)
+    parser.add_argument("-s",
+                        "--skip_decimation",
+                        help="Option to skip mesh decimation if meshes exist",
+                        type=bool)
+    args = parser.parse_args()
+
+    #input_path = "/groups/scicompsoft/home/ackermand/Programming/multiresolutionMeshes/test_meshes/"  #/groups/cosem/cosem/ackermand/meshesForWebsite/res1decimation0p05/jrc_hela-1/mito_seg/"
+    #output_path = "/groups/scicompsoft/home/ackermand/Programming/multiresolutionMeshes/test_meshes_output"  #/groups/cosem/cosem/ackermand/meshesForWebsite/res1decimation0p05/jrc_hela-1/test_simpler_multires/mito_seg/"
+    input_path = args.input_path
+    output_path = args.output_path
+    num_lods = args.num_lods
+    lod_0_box_size = args.box_size
+    skip_decimation = args.skip_decimation
+
+    lods = list(range(num_lods))
+
+    mesh_files = [
+        f for f in listdir(input_path) if isfile(join(input_path, f))
+    ]
+    mesh_ids = [splitext(mesh_file)[0] for mesh_file in mesh_files]
+    mesh_ext = splitext(mesh_files[0])[1][1:]
+
+    t0 = time.time()
+    date_time = datetime.now().strftime("%Y/%m/%d %H:%M:%S")
+
+    print_with_datetime("Starting dask...")
+    num_workers = multiprocessing.cpu_count()
     client = Client(threads_per_worker=1,
                     n_workers=num_workers,
                     memory_limit='16GB')
-    t0 = time.time()
+    print_with_datetime(
+        "Dask started! Check http://localhost:8787/status for status")
 
-    #
-    num_lods = 6
-    input_path = "/groups/cosem/cosem/ackermand/meshesForWebsite/res1decimation0p05/jrc_hela-1/mito_seg/"
-    output_path = "/groups/cosem/cosem/ackermand/meshesForWebsite/res1decimation0p05/jrc_hela-1/test_simpler_multires/mito_seg/"
-    results = []
-    ids = list(range(1, 800))
-    lods = list(range(num_lods))
+    #  Mesh decimation
+    if not skip_decimation:
+        print_with_datetime("Generating decimated meshes...")
+        generate_decimated_meshes(input_path, output_path, lods, mesh_ids,
+                                  mesh_ext)
+        print_with_datetime("Generated decimated meshes!")
 
-    t0 = time.time()
-    lod_0_box_size = 64 * 4
-    generate_all_neuroglancer_multires_meshes(output_path, num_workers, ids,
-                                              lods, "obj", lod_0_box_size)
-    #print(time.time()-t0)
-    dask_results = dask.compute(*results)
+    # Create multiresolution meshes
+    print_with_datetime("Generating multires meshes...")
+    generate_all_neuroglancer_multires_meshes(output_path, num_workers,
+                                              mesh_ids, lods, mesh_ext,
+                                              lod_0_box_size)
+    print_with_datetime("Generated multires meshes!")
+
+    # Writing out top-level files
+    print_with_datetime("Writing info and segment properties files...")
+    output_path = f"{output_path}/multires"
     utils.write_segment_properties_file(output_path)
     utils.write_info_file(output_path)
+    print_with_datetime("Wrote info and segment properties files!")
 
-    # generate_multiscale_meshes(
-    #      input_path, output_path, lods, ids, 'obj')
-
-    print("end", time.time() - t0)
+    print_with_datetime(f"Complete! Elapsed time: {time.time() - t0}")
