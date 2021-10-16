@@ -5,10 +5,23 @@ import os
 import json
 import glob
 from collections import namedtuple
+import trimesh
 
 CompressedFragment = namedtuple(
     'CompressedFragment',
     ['draco_bytes', 'position', 'offset', 'lod_0_positions'])
+
+
+def mesh_loader(filepath):
+    _, ext = os.path.splitext(filepath)
+    if ext == "" or ext == ".ngmesh":
+        vertices, faces = load_ngmesh(filepath)
+    else:
+        mesh = trimesh.load(filepath)
+        vertices = mesh.vertices
+        faces = mesh.faces
+
+    return vertices, faces
 
 
 def unpack_and_remove(datatype, num_elements, file_content):
@@ -21,7 +34,7 @@ def unpack_and_remove(datatype, num_elements, file_content):
         return np.array(output), file_content
 
 
-def read_ngmesh_file(filepath):
+def load_ngmesh(filepath):
     with open(filepath, mode='rb') as file:
         file_content = file.read()
 

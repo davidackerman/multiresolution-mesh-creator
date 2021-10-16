@@ -291,18 +291,17 @@ def pyfqmr_decimate(input_path, output_path, id, lod, ext, decimation_factor):
                                    scaled by 2**lod
     """
 
-    mesh = trimesh.load(f"{input_path}/{id}.{ext}")
-    desired_faces = max(len(mesh.faces) // (decimation_factor**lod), 1)
-
+    vertices, faces = utils.mesh_loader(f"{input_path}/{id}{ext}")
+    desired_faces = max(len(faces) // (decimation_factor**lod), 1)
     mesh_simplifier = pyfqmr.Simplify()
-    mesh_simplifier.setMesh(mesh.vertices, mesh.faces)
+    mesh_simplifier.setMesh(vertices, faces)
     mesh_simplifier.simplify_mesh(target_count=desired_faces,
                                   aggressiveness=7,
                                   preserve_border=False,
                                   verbose=False)
-    v, f, _ = mesh_simplifier.getMesh()
+    vertices, faces, _ = mesh_simplifier.getMesh()
 
-    mesh = trimesh.Trimesh(v, f)
+    mesh = trimesh.Trimesh(vertices, faces)
     mesh.export(f"{output_path}/s{lod}/{id}.stl")
 
 
@@ -368,20 +367,16 @@ def generate_neuroglancer_multires_mesh(output_path, num_workers, id, lods,
 
         nyz, _, _ = np.eye(3)
 
-        mesh = []
         results = []
 
         for idx, current_lod in enumerate(lods):
             if current_lod == 0:
-                mesh = trimesh.load(
-                    f"{output_path}/mesh_lods/s{current_lod}/{id}.{original_ext}"
+                vertices, faces = utils.mesh_loader(
+                    f"{output_path}/mesh_lods/s{current_lod}/{id}{original_ext}"
                 )
             else:
-                mesh = trimesh.load(
+                vertices, faces = utils.mesh_loader(
                     f"{output_path}/mesh_lods/s{current_lod}/{id}.stl")
-
-            vertices = mesh.vertices
-            faces = mesh.faces
 
             current_box_size = lod_0_box_size * 2**current_lod
             start_fragment = np.maximum(
@@ -510,10 +505,9 @@ if __name__ == "__main__":
         f for f in listdir(input_path) if isfile(join(input_path, f))
     ]
     mesh_ids = [splitext(mesh_file)[0] for mesh_file in mesh_files]
-    mesh_ext = splitext(mesh_files[0])[1][1:]
+    mesh_ext = splitext(mesh_files[0])[1]
 
     t0 = time.time()
-    date_time = datetime.now().strftime("%Y/%m/%d %H:%M:%S")
 
     print_with_datetime("Starting dask...")
     num_workers = multiprocessing.cpu_count()
