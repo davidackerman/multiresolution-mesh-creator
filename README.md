@@ -78,7 +78,7 @@ Two meshes are provided in `test_meshes` as an example (a bunny and a teapot). T
 python create_multiresolution_meshes.py -i test_meshes/ -o test_meshes_output/ -n 5 -b 4 -d 4
 ```
 
-The output will be in `test_mehes_output`. You can use something like [http-server](https://www.npmjs.com/package/http-server) to serve up the files for viewing in neuroglancer. See the demo below to see the results of running the above command.
+The output will be in `test_mehes_output/multires/`. You can use something like [http-server](https://www.npmjs.com/package/http-server) to serve up that directory for viewing in neuroglancer. See the demo below to see the results of running the above command.
 
 ![Demo](recording/recording.gif)
 
