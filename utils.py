@@ -11,6 +11,33 @@ CompressedFragment = namedtuple(
     ['draco_bytes', 'position', 'offset', 'lod_0_positions'])
 
 
+def unpack_and_remove(datatype, num_elements, file_content):
+    datatype = datatype * num_elements
+    output = struct.unpack(datatype, file_content[0:4 * num_elements])
+    file_content = file_content[4 * num_elements:]
+    if num_elements == 1:
+        return output[0], file_content
+    else:
+        return np.array(output), file_content
+
+
+def read_ngmesh_file(filepath):
+    with open(filepath, mode='rb') as file:
+        file_content = file.read()
+
+    num_vertices, file_content = unpack_and_remove("I", 1, file_content)
+    print(num_vertices)
+    vertices, file_content = unpack_and_remove("f", 3 * num_vertices,
+                                               file_content)
+    num_faces = int(len(file_content) / 12)
+    faces, file_content = unpack_and_remove("I", 3 * num_faces, file_content)
+
+    vertices = vertices.reshape(-1, 3)
+    faces = faces.reshape(-1, 3)
+
+    return vertices, faces
+
+
 def _cmp_zorder(lhs, rhs) -> bool:
     def less_msb(x: int, y: int) -> bool:
         return x < y and x < (x ^ y)
