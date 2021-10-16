@@ -15,7 +15,7 @@ conda env update -n multiresolution_mesh_creator --file multiresolution_mesh_cre
 ```
 conda activate multiresolution_mesh_creator
 ```
-4. Install `dvidutils` as described in the submodule:
+4. Install `dvidutils` - used for custom draco quantization - as described in the submodule:
 ```cd dvidutils
 mkdir build
 cd build
@@ -30,7 +30,7 @@ cmake .. \
 make
 make install
 ```
-5. Install `pyfqmr-Fast-Quadric-Mesh-Reduction` as described in the submodule:
+5. Install `pyfqmr-Fast-Quadric-Mesh-Reduction` - used for mesh decimation - as described in the submodule:
 ```
 cd pyfqmr-Fast-Quadric-Mesh-Reduction
 python setup.py install
@@ -79,6 +79,9 @@ python create_multiresolution_meshes.py -i test_meshes/ -o test_meshes_output/ -
 ```
 
 The output will be in `test_mehes_output/multires/`, and you can monitor the progress via Dask at http://localhost:8787/status. You can use something like [http-server](https://www.npmjs.com/package/http-server) to serve up that directory for viewing in neuroglancer. See the demo below to see the results of running the above command.
+
+Note: The actual decimation amount is not guaranteed by the decimation factor, but is instead dependent on other [pyfqmr](https://github.com/Kramer84/pyfqmr-Fast-Quadric-Mesh-Reduction) settings as well, such as aggressiveness. These, and other `pyfqmr` settings can be set in the `create-multiresolution-meshes.py` if desired for further decimation customizability.
+
 
 ![Demo](recording/recording.gif)
 
