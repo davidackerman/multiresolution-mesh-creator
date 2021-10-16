@@ -418,7 +418,9 @@ def generate_neuroglancer_multires_mesh(output_path, num_workers, id, lods,
                 lods[:idx + 1],
                 np.asarray([lod_0_box_size, lod_0_box_size, lod_0_box_size]))
 
-    print(f"Completed creation of neuroglancer mesh for mesh {id}!")
+    print(
+        f"Completed creation of multiresolution neuroglancer mesh for mesh {id}!"
+    )
 
 
 def generate_all_neuroglancer_multires_meshes(output_path, num_workers, ids,
