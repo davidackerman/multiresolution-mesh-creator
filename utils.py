@@ -14,7 +14,7 @@ CompressedFragment = namedtuple(
 
 def mesh_loader(filepath):
     _, ext = os.path.splitext(filepath)
-    if ext == "" or ext == ".ngmesh":
+    if ext == "" or ext == ".ngmesh" or ext == ".ng":
         vertices, faces = load_ngmesh(filepath)
     else:
         mesh = trimesh.load(filepath)
