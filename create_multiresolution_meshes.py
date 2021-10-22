@@ -118,7 +118,7 @@ def my_fast_slice_faces_plane(vertices, faces, triangles, max_edge_length,
 
 
 def my_slice_faces_plane(vertices, faces, plane_normal, plane_origin):
-    """Wrapper for trimesh slice_faces_plane to cath error that happens if the
+    """Wrapper for trimesh slice_faces_plane to catch error that happens if the
     whole mesh is to one side of the plane.
 
     Args:
@@ -273,7 +273,8 @@ def generate_mesh_decomposition(vertices, faces, lod_0_box_size,
 
 
 @dask.delayed
-def pyfqmr_decimate(input_path, output_path, id, lod, ext, decimation_factor):
+def pyfqmr_decimate(input_path, output_path, id, lod, ext, decimation_factor,
+                    aggressiveness):
     """Mesh decimation using pyfqmr.
 
     Decimation is performed on a mesh located at `input_path`/`id`.`ext`. The
@@ -287,16 +288,17 @@ def pyfqmr_decimate(input_path, output_path, id, lod, ext, decimation_factor):
         id [`int`]: The object id
         lod [`int`]: The current level of detail
         ext [`str`]: The extension of the s0 meshes.
-        decimation_factor [`int`]: The factor by which we decimate faces,
-                                   scaled by 2**lod
+        decimation_factor [`float`]: The factor by which we decimate faces,
+                                     scaled by 2**lod
+        aggressiveness [`int`]: Aggressiveness for decimation
     """
 
     vertices, faces = utils.mesh_loader(f"{input_path}/{id}{ext}")
-    desired_faces = max(len(faces) // (decimation_factor**lod), 1)
+    desired_faces = max(len(faces) // (decimation_factor**lod), 4)
     mesh_simplifier = pyfqmr.Simplify()
     mesh_simplifier.setMesh(vertices, faces)
     mesh_simplifier.simplify_mesh(target_count=desired_faces,
-                                  aggressiveness=7,
+                                  aggressiveness=aggressiveness,
                                   preserve_border=False,
                                   verbose=False)
     vertices, faces, _ = mesh_simplifier.getMesh()
@@ -306,7 +308,7 @@ def pyfqmr_decimate(input_path, output_path, id, lod, ext, decimation_factor):
 
 
 def generate_decimated_meshes(input_path, output_path, lods, ids, ext,
-                              decimation_factor):
+                              decimation_factor, aggressiveness):
     """Generate decimatated meshes for all ids in `ids`, over all lod in `lods`.
 
     Args:
@@ -315,8 +317,9 @@ def generate_decimated_meshes(input_path, output_path, lods, ids, ext,
         lods (`int`): Levels of detail over which to have mesh
         ids (`list`): All mesh ids
         ext (`str`): Input mesh formats.
-        decimation_fraction [`int`]: The factor by which we decimate faces,
-                                     scaled by 2**lod
+        decimation_fraction [`float`]: The factor by which we decimate faces,
+                                       scaled by 2**lod
+        aggressiveness [`int`]: Aggressiveness for decimation
     """
 
     results = []
@@ -334,7 +337,8 @@ def generate_decimated_meshes(input_path, output_path, lods, ids, ext,
             for id in ids:
                 results.append(
                     pyfqmr_decimate(input_path, f"{output_path}/mesh_lods", id,
-                                    current_lod, ext, decimation_factor))
+                                    current_lod, ext, decimation_factor,
+                                    aggressiveness))
 
     dask.compute(*results)
 
@@ -491,16 +495,33 @@ if __name__ == "__main__":
         default=2,
         help=
         "(Optional) factor by which to decimate faces at each lod, ie factor**lod; default is 2",
+        type=float,
+        required=False)
+    parser.add_argument(
+        "-a",
+        "--aggressiveness",
+        default=7,
+        help=
+        "(Optional) aggressiveness to be used for decimation; default is 7",
+        type=int,
+        required=False)
+    parser.add_argument(
+        "--num_workers",
+        default=multiprocessing.cpu_count(),
+        help="(Optional) number of workers for dask; default is cpu_count",
         type=int,
         required=False)
     args = parser.parse_args()
 
+    # Gather args
     input_path = args.input_path
     output_path = args.output_path
     num_lods = args.num_lods
     lod_0_box_size = args.box_size
     skip_decimation = args.skip_decimation
     decimation_factor = args.decimation_factor
+    aggressiveness = args.aggressiveness
+    num_workers = args.num_workers
 
     lods = list(range(num_lods))
     mesh_files = [
@@ -512,7 +533,6 @@ if __name__ == "__main__":
     t0 = time.time()
 
     print_with_datetime("Starting dask...")
-    num_workers = multiprocessing.cpu_count()
     client = Client(threads_per_worker=1,
                     n_workers=num_workers,
                     memory_limit='16GB')
@@ -523,7 +543,7 @@ if __name__ == "__main__":
     if not skip_decimation:
         print_with_datetime("Generating decimated meshes...")
         generate_decimated_meshes(input_path, output_path, lods, mesh_ids,
-                                  mesh_ext, decimation_factor)
+                                  mesh_ext, decimation_factor, aggressiveness)
         print_with_datetime("Generated decimated meshes!")
 
     # Create multiresolution meshes
