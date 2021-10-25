@@ -1,0 +1,56 @@
+
+------------------------------------------------------------
+Sender: LSF System <lsfadmin@e10u29>
+Subject: Job 109080331: <dask-worker> in cluster <Janelia> Exited
+
+Job <dask-worker> was submitted from host <e10u01> by user <ackermand> in cluster <Janelia> at Fri Oct 22 17:15:50 2021
+Job was executed on host(s) <48*e10u29>, in queue <short>, as user <ackermand> in cluster <Janelia> at Fri Oct 22 17:15:50 2021
+</groups/scicompsoft/home/ackermand> was used as the home directory.
+</groups/scicompsoft/home/ackermand/Programming/multiresolution-mesh-creator> was used as the working directory.
+Started at Fri Oct 22 17:15:50 2021
+Terminated at Fri Oct 22 17:16:46 2021
+Results reported at Fri Oct 22 17:16:46 2021
+
+Your job looked like:
+
+------------------------------------------------------------
+# LSBATCH: User input
+#!/usr/bin/env bash
+
+#BSUB -J dask-worker
+#BSUB -e job-logs/LSFCluster-0-%J.err
+#BSUB -o job-logs/LSFCluster-0-%J.out
+#BSUB -n 48
+#BSUB -R "span[hosts=1]"
+#BSUB -M 72000
+#BSUB -W 01:00
+#BSUB -P cosem
+
+/groups/scicompsoft/home/ackermand/miniconda3/envs/multiresolution_mesh_creator/bin/python -m distributed.cli.dask_worker tcp://10.36.60.11:22723 --nthreads 1 --nprocs 40 --memory-limit 16.76GiB --name LSFCluster-0 --nanny --death-timeout 60 --protocol tcp://
+
+------------------------------------------------------------
+
+TERM_OWNER: job killed by owner.
+Exited with signal termination: 14.
+
+Resource usage summary:
+
+    CPU time :                                   209.59 sec.
+    Max Memory :                                 4933 MB
+    Average Memory :                             3641.43 MB
+    Total Requested Memory :                     737280.00 MB
+    Delta Memory :                               732347.00 MB
+    Max Swap :                                   -
+    Max Processes :                              45
+    Max Threads :                                4049
+    Run time :                                   53 sec.
+    Turnaround time :                            56 sec.
+
+The output (if any) is above this job summary.
+
+
+
+PS:
+
+Read file <job-logs/LSFCluster-0-109080331.err> for stderr output of this job.
+

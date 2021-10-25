@@ -2,13 +2,17 @@ import trimesh
 from trimesh.intersections import slice_faces_plane
 import numpy as np
 from dvidutils import encode_faces_to_custom_drc_bytes
-import dask
 import utils
 import time
 import os
 from os import listdir
 from os.path import isfile, join, splitext
+
+os.environ[
+    'DASK_CONFIG'] = "/groups/scicompsoft/home/ackermand/Programming/multiresolution-mesh-creator/configs/dask-config.yaml"
+import dask
 import pyfqmr
+
 from dask.distributed import Client, worker_client
 from utils import CompressedFragment
 from numba import jit
@@ -398,10 +402,13 @@ def generate_neuroglancer_multires_mesh(output_path, num_workers, id, lods,
                     vertices, faces, -nyz, plane_origin_yz)
 
                 if len(vertices_yz) > 0:
+                    # doing client.scatter(vertices_yz) and client.scatter(faces_yz)
+                    # seemed to cause this issue: https://github.com/dask/distributed/issues/4612
+                    # so they are currently removed
                     results.append(
                         generate_mesh_decomposition(
-                            client.scatter(vertices_yz),
-                            client.scatter(faces_yz), lod_0_box_size,
+                            vertices_yz,
+                            faces_yz, lod_0_box_size,
                             start_fragment, end_fragment, x, x + x_stride,
                             current_lod))
 
@@ -450,6 +457,20 @@ def generate_all_neuroglancer_multires_meshes(output_path, num_workers, ids,
                                                 lod_0_box_size))
 
     dask.compute(*results)
+
+
+def start_dask(num_workers):
+    if True:
+        from dask_jobqueue import LSFCluster
+        cluster = LSFCluster()
+        cluster.scale(jobs=2)
+        client = Client(cluster)
+        print("after")
+    else:
+        client = Client(threads_per_worker=1,
+                        n_workers=num_workers,
+                        memory_limit='16GB')
+    return client
 
 
 def print_with_datetime(output):
@@ -533,11 +554,9 @@ if __name__ == "__main__":
     t0 = time.time()
 
     print_with_datetime("Starting dask...")
-    client = Client(threads_per_worker=1,
-                    n_workers=num_workers,
-                    memory_limit='16GB')
+    client = start_dask(num_workers)
     print_with_datetime(
-        "Dask started! Check http://localhost:8787/status for status")
+        f"Dask started! Check {client.cluster.dashboard_link} for status")
 
     #  Mesh decimation
     if not skip_decimation:

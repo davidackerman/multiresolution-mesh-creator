@@ -1,0 +1,671 @@
+[2021-10-22 18:40:13,129] INFO         Start Nanny at: 'tcp://10.36.60.18:15159'
+[2021-10-22 18:40:13,129] INFO         Start Nanny at: 'tcp://10.36.60.18:17265'
+[2021-10-22 18:40:13,130] INFO         Start Nanny at: 'tcp://10.36.60.18:16035'
+[2021-10-22 18:40:13,130] INFO         Start Nanny at: 'tcp://10.36.60.18:24649'
+[2021-10-22 18:40:13,163] INFO         Start Nanny at: 'tcp://10.36.60.18:39121'
+[2021-10-22 18:40:13,164] INFO         Start Nanny at: 'tcp://10.36.60.18:33029'
+[2021-10-22 18:40:13,175] INFO         Start Nanny at: 'tcp://10.36.60.18:30029'
+[2021-10-22 18:40:13,179] INFO         Start Nanny at: 'tcp://10.36.60.18:22025'
+[2021-10-22 18:40:13,179] INFO         Start Nanny at: 'tcp://10.36.60.18:24915'
+[2021-10-22 18:40:13,180] INFO         Start Nanny at: 'tcp://10.36.60.18:26503'
+[2021-10-22 18:40:13,180] INFO         Start Nanny at: 'tcp://10.36.60.18:26343'
+[2021-10-22 18:40:13,180] INFO         Start Nanny at: 'tcp://10.36.60.18:23537'
+[2021-10-22 18:40:13,180] INFO         Start Nanny at: 'tcp://10.36.60.18:36571'
+[2021-10-22 18:40:13,180] INFO         Start Nanny at: 'tcp://10.36.60.18:36981'
+[2021-10-22 18:40:13,181] INFO         Start Nanny at: 'tcp://10.36.60.18:31885'
+[2021-10-22 18:40:13,181] INFO         Start Nanny at: 'tcp://10.36.60.18:36481'
+[2021-10-22 18:40:13,181] INFO         Start Nanny at: 'tcp://10.36.60.18:24945'
+[2021-10-22 18:40:13,181] INFO         Start Nanny at: 'tcp://10.36.60.18:30189'
+[2021-10-22 18:40:13,181] INFO         Start Nanny at: 'tcp://10.36.60.18:20251'
+[2021-10-22 18:40:13,181] INFO         Start Nanny at: 'tcp://10.36.60.18:22983'
+[2021-10-22 18:40:13,182] INFO         Start Nanny at: 'tcp://10.36.60.18:32137'
+[2021-10-22 18:40:13,182] INFO         Start Nanny at: 'tcp://10.36.60.18:18653'
+[2021-10-22 18:40:13,182] INFO         Start Nanny at: 'tcp://10.36.60.18:28399'
+[2021-10-22 18:40:13,182] INFO         Start Nanny at: 'tcp://10.36.60.18:21247'
+[2021-10-22 18:40:13,182] INFO         Start Nanny at: 'tcp://10.36.60.18:38703'
+[2021-10-22 18:40:13,183] INFO         Start Nanny at: 'tcp://10.36.60.18:28973'
+[2021-10-22 18:40:13,184] INFO         Start Nanny at: 'tcp://10.36.60.18:17893'
+[2021-10-22 18:40:13,184] INFO         Start Nanny at: 'tcp://10.36.60.18:20315'
+[2021-10-22 18:40:13,184] INFO         Start Nanny at: 'tcp://10.36.60.18:31679'
+[2021-10-22 18:40:13,185] INFO         Start Nanny at: 'tcp://10.36.60.18:15905'
+[2021-10-22 18:40:13,185] INFO         Start Nanny at: 'tcp://10.36.60.18:27165'
+[2021-10-22 18:40:13,185] INFO         Start Nanny at: 'tcp://10.36.60.18:22877'
+[2021-10-22 18:40:13,185] INFO         Start Nanny at: 'tcp://10.36.60.18:30001'
+[2021-10-22 18:40:13,185] INFO         Start Nanny at: 'tcp://10.36.60.18:29705'
+[2021-10-22 18:40:13,185] INFO         Start Nanny at: 'tcp://10.36.60.18:28243'
+[2021-10-22 18:40:13,185] INFO         Start Nanny at: 'tcp://10.36.60.18:31791'
+[2021-10-22 18:40:13,186] INFO         Start Nanny at: 'tcp://10.36.60.18:36551'
+[2021-10-22 18:40:13,186] INFO         Start Nanny at: 'tcp://10.36.60.18:21397'
+[2021-10-22 18:40:13,186] INFO         Start Nanny at: 'tcp://10.36.60.18:34727'
+[2021-10-22 18:40:13,187] INFO         Start Nanny at: 'tcp://10.36.60.18:36231'
+[2021-10-22 18:40:15,114] INFO Found stale lock file and directory '/groups/scicompsoft/home/ackermand/Programming/multiresolution-mesh-creator/dask-worker-space/worker-zr5xplpb', purging
+[2021-10-22 18:40:15,133] INFO Found stale lock file and directory '/groups/scicompsoft/home/ackermand/Programming/multiresolution-mesh-creator/dask-worker-space/worker-x0kux7w1', purging
+[2021-10-22 18:40:15,158] INFO Found stale lock file and directory '/groups/scicompsoft/home/ackermand/Programming/multiresolution-mesh-creator/dask-worker-space/worker-c4zc4hdv', purging
+[2021-10-22 18:40:15,171] INFO Found stale lock file and directory '/groups/scicompsoft/home/ackermand/Programming/multiresolution-mesh-creator/dask-worker-space/worker-_ye5q4z9', purging
+[2021-10-22 18:40:15,184] INFO Found stale lock file and directory '/groups/scicompsoft/home/ackermand/Programming/multiresolution-mesh-creator/dask-worker-space/worker-cdl5vjtc', purging
+[2021-10-22 18:40:15,192] INFO Found stale lock file and directory '/groups/scicompsoft/home/ackermand/Programming/multiresolution-mesh-creator/dask-worker-space/worker-54u5vw6r', purging
+[2021-10-22 18:40:15,209] INFO Found stale lock file and directory '/groups/scicompsoft/home/ackermand/Programming/multiresolution-mesh-creator/dask-worker-space/worker-w22_hd20', purging
+[2021-10-22 18:40:15,236] INFO Found stale lock file and directory '/groups/scicompsoft/home/ackermand/Programming/multiresolution-mesh-creator/dask-worker-space/worker-6w1hluzg', purging
+[2021-10-22 18:40:15,276] INFO Found stale lock file and directory '/groups/scicompsoft/home/ackermand/Programming/multiresolution-mesh-creator/dask-worker-space/worker-61jzk9b_', purging
+[2021-10-22 18:40:15,297] INFO Found stale lock file and directory '/groups/scicompsoft/home/ackermand/Programming/multiresolution-mesh-creator/dask-worker-space/worker-higxcn80', purging
+[2021-10-22 18:40:15,309] INFO Found stale lock file and directory '/groups/scicompsoft/home/ackermand/Programming/multiresolution-mesh-creator/dask-worker-space/worker-tg33rz4_', purging
+[2021-10-22 18:40:15,321] INFO Found stale lock file and directory '/groups/scicompsoft/home/ackermand/Programming/multiresolution-mesh-creator/dask-worker-space/worker-c9zwb0pj', purging
+[2021-10-22 18:40:15,334] INFO Found stale lock file and directory '/groups/scicompsoft/home/ackermand/Programming/multiresolution-mesh-creator/dask-worker-space/worker-w13v16jg', purging
+[2021-10-22 18:40:15,346] INFO Found stale lock file and directory '/groups/scicompsoft/home/ackermand/Programming/multiresolution-mesh-creator/dask-worker-space/worker-32_wj1lr', purging
+[2021-10-22 18:40:15,362] INFO Found stale lock file and directory '/groups/scicompsoft/home/ackermand/Programming/multiresolution-mesh-creator/dask-worker-space/worker-0nwsry6t', purging
+[2021-10-22 18:40:15,377] INFO Found stale lock file and directory '/groups/scicompsoft/home/ackermand/Programming/multiresolution-mesh-creator/dask-worker-space/worker-tg6p9ei7', purging
+[2021-10-22 18:40:15,384] INFO Found stale lock file and directory '/groups/scicompsoft/home/ackermand/Programming/multiresolution-mesh-creator/dask-worker-space/worker-gvaifeih', purging
+[2021-10-22 18:40:15,390] INFO Found stale lock file and directory '/groups/scicompsoft/home/ackermand/Programming/multiresolution-mesh-creator/dask-worker-space/worker-s17pzxrx', purging
+[2021-10-22 18:40:15,399] INFO Found stale lock file and directory '/groups/scicompsoft/home/ackermand/Programming/multiresolution-mesh-creator/dask-worker-space/worker-gri8zjcd', purging
+[2021-10-22 18:40:15,408] INFO Found stale lock file and directory '/groups/scicompsoft/home/ackermand/Programming/multiresolution-mesh-creator/dask-worker-space/worker-idbhd7l9', purging
+[2021-10-22 18:40:15,417] INFO Found stale lock file and directory '/groups/scicompsoft/home/ackermand/Programming/multiresolution-mesh-creator/dask-worker-space/worker-cpc7rttn', purging
+[2021-10-22 18:40:15,431] INFO Found stale lock file and directory '/groups/scicompsoft/home/ackermand/Programming/multiresolution-mesh-creator/dask-worker-space/worker-vrwl8dco', purging
+[2021-10-22 18:40:15,446] INFO Found stale lock file and directory '/groups/scicompsoft/home/ackermand/Programming/multiresolution-mesh-creator/dask-worker-space/worker-8zyc310u', purging
+[2021-10-22 18:40:15,456] INFO Found stale lock file and directory '/groups/scicompsoft/home/ackermand/Programming/multiresolution-mesh-creator/dask-worker-space/worker-1aucl75a', purging
+[2021-10-22 18:40:15,468] INFO Found stale lock file and directory '/groups/scicompsoft/home/ackermand/Programming/multiresolution-mesh-creator/dask-worker-space/worker-ehtsdw_d', purging
+[2021-10-22 18:40:15,484] INFO Found stale lock file and directory '/groups/scicompsoft/home/ackermand/Programming/multiresolution-mesh-creator/dask-worker-space/worker-wmy7p27t', purging
+[2021-10-22 18:40:15,502] INFO Found stale lock file and directory '/groups/scicompsoft/home/ackermand/Programming/multiresolution-mesh-creator/dask-worker-space/worker-wdfda_8_', purging
+[2021-10-22 18:40:15,528] INFO Found stale lock file and directory '/groups/scicompsoft/home/ackermand/Programming/multiresolution-mesh-creator/dask-worker-space/worker-2o5x4wrn', purging
+[2021-10-22 18:40:15,544] INFO Found stale lock file and directory '/groups/scicompsoft/home/ackermand/Programming/multiresolution-mesh-creator/dask-worker-space/worker-cect5w4v', purging
+[2021-10-22 18:40:15,560] INFO Found stale lock file and directory '/groups/scicompsoft/home/ackermand/Programming/multiresolution-mesh-creator/dask-worker-space/worker-fuzxn7ao', purging
+[2021-10-22 18:40:15,569] INFO Found stale lock file and directory '/groups/scicompsoft/home/ackermand/Programming/multiresolution-mesh-creator/dask-worker-space/worker-eogca9pf', purging
+[2021-10-22 18:40:15,581] INFO Found stale lock file and directory '/groups/scicompsoft/home/ackermand/Programming/multiresolution-mesh-creator/dask-worker-space/worker-q6ymbn_h', purging
+[2021-10-22 18:40:15,591] INFO Found stale lock file and directory '/groups/scicompsoft/home/ackermand/Programming/multiresolution-mesh-creator/dask-worker-space/worker-6p5j_md_', purging
+[2021-10-22 18:40:15,600] INFO Found stale lock file and directory '/groups/scicompsoft/home/ackermand/Programming/multiresolution-mesh-creator/dask-worker-space/worker-gief3m95', purging
+[2021-10-22 18:40:15,610] INFO Found stale lock file and directory '/groups/scicompsoft/home/ackermand/Programming/multiresolution-mesh-creator/dask-worker-space/worker-bj8x2idn', purging
+[2021-10-22 18:40:15,622] INFO Found stale lock file and directory '/groups/scicompsoft/home/ackermand/Programming/multiresolution-mesh-creator/dask-worker-space/worker-sdb6oii1', purging
+[2021-10-22 18:40:15,632] INFO Found stale lock file and directory '/groups/scicompsoft/home/ackermand/Programming/multiresolution-mesh-creator/dask-worker-space/worker-2a7khv_k', purging
+[2021-10-22 18:40:15,642] INFO Found stale lock file and directory '/groups/scicompsoft/home/ackermand/Programming/multiresolution-mesh-creator/dask-worker-space/worker-bkv1w47r', purging
+[2021-10-22 18:40:15,651] INFO Found stale lock file and directory '/groups/scicompsoft/home/ackermand/Programming/multiresolution-mesh-creator/dask-worker-space/worker-xj6h_l8a', purging
+[2021-10-22 18:40:15,664] INFO Found stale lock file and directory '/groups/scicompsoft/home/ackermand/Programming/multiresolution-mesh-creator/dask-worker-space/worker-hh4cpz6j', purging
+[2021-10-22 18:40:16,571] INFO       Start worker at:    tcp://10.36.60.18:33307
+[2021-10-22 18:40:16,571] INFO       Start worker at:    tcp://10.36.60.18:15651
+[2021-10-22 18:40:16,571] INFO       Start worker at:    tcp://10.36.60.18:29345
+[2021-10-22 18:40:16,571] INFO       Start worker at:    tcp://10.36.60.18:26609
+[2021-10-22 18:40:16,571] INFO       Start worker at:    tcp://10.36.60.18:23913
+[2021-10-22 18:40:16,571] INFO       Start worker at:    tcp://10.36.60.18:20859
+[2021-10-22 18:40:16,571] INFO       Start worker at:    tcp://10.36.60.18:25755
+[2021-10-22 18:40:16,571] INFO       Start worker at:    tcp://10.36.60.18:28451
+[2021-10-22 18:40:16,571] INFO       Start worker at:    tcp://10.36.60.18:15339
+[2021-10-22 18:40:16,572] INFO          Listening to:    tcp://10.36.60.18:33307
+[2021-10-22 18:40:16,572] INFO          Listening to:    tcp://10.36.60.18:29345
+[2021-10-22 18:40:16,572] INFO          Listening to:    tcp://10.36.60.18:26609
+[2021-10-22 18:40:16,571] INFO       Start worker at:    tcp://10.36.60.18:28975
+[2021-10-22 18:40:16,571] INFO       Start worker at:    tcp://10.36.60.18:26611
+[2021-10-22 18:40:16,571] INFO       Start worker at:    tcp://10.36.60.18:28245
+[2021-10-22 18:40:16,572] INFO          Listening to:    tcp://10.36.60.18:25755
+[2021-10-22 18:40:16,572] INFO          Listening to:    tcp://10.36.60.18:20859
+[2021-10-22 18:40:16,572] INFO          Listening to:    tcp://10.36.60.18:23913
+[2021-10-22 18:40:16,572] INFO          Listening to:    tcp://10.36.60.18:28451
+[2021-10-22 18:40:16,572] INFO          dashboard at:          10.36.60.18:38655
+[2021-10-22 18:40:16,572] INFO          Listening to:    tcp://10.36.60.18:15339
+[2021-10-22 18:40:16,572] INFO          dashboard at:          10.36.60.18:28149
+[2021-10-22 18:40:16,572] INFO          Listening to:    tcp://10.36.60.18:28975
+[2021-10-22 18:40:16,572] INFO          Listening to:    tcp://10.36.60.18:26611
+[2021-10-22 18:40:16,572] INFO          dashboard at:          10.36.60.18:35961
+[2021-10-22 18:40:16,572] INFO          dashboard at:          10.36.60.18:39001
+[2021-10-22 18:40:16,572] INFO          Listening to:    tcp://10.36.60.18:28245
+[2021-10-22 18:40:16,572] INFO          dashboard at:          10.36.60.18:22523
+[2021-10-22 18:40:16,572] INFO Waiting to connect to:   tcp://10.36.107.28:22637
+[2021-10-22 18:40:16,572] INFO          dashboard at:          10.36.60.18:33333
+[2021-10-22 18:40:16,572] INFO Waiting to connect to:   tcp://10.36.107.28:22637
+[2021-10-22 18:40:16,572] INFO          dashboard at:          10.36.60.18:32353
+[2021-10-22 18:40:16,572] INFO          dashboard at:          10.36.60.18:24469
+[2021-10-22 18:40:16,572] INFO Waiting to connect to:   tcp://10.36.107.28:22637
+[2021-10-22 18:40:16,572] INFO Waiting to connect to:   tcp://10.36.107.28:22637
+[2021-10-22 18:40:16,572] INFO          dashboard at:          10.36.60.18:23085
+[2021-10-22 18:40:16,572] INFO          Listening to:    tcp://10.36.60.18:15651
+[2021-10-22 18:40:16,572] INFO -------------------------------------------------
+[2021-10-22 18:40:16,572] INFO Waiting to connect to:   tcp://10.36.107.28:22637
+[2021-10-22 18:40:16,572] INFO          dashboard at:          10.36.60.18:25383
+[2021-10-22 18:40:16,572] INFO -------------------------------------------------
+[2021-10-22 18:40:16,572] INFO -------------------------------------------------
+[2021-10-22 18:40:16,572] INFO Waiting to connect to:   tcp://10.36.107.28:22637
+[2021-10-22 18:40:16,572] INFO Waiting to connect to:   tcp://10.36.107.28:22637
+[2021-10-22 18:40:16,572] INFO -------------------------------------------------
+[2021-10-22 18:40:16,572] INFO Waiting to connect to:   tcp://10.36.107.28:22637
+[2021-10-22 18:40:16,572] INFO Waiting to connect to:   tcp://10.36.107.28:22637
+[2021-10-22 18:40:16,572] INFO -------------------------------------------------
+[2021-10-22 18:40:16,572] INFO          dashboard at:          10.36.60.18:20755
+[2021-10-22 18:40:16,572] INFO -------------------------------------------------
+[2021-10-22 18:40:16,572] INFO Waiting to connect to:   tcp://10.36.107.28:22637
+[2021-10-22 18:40:16,572] INFO -------------------------------------------------
+[2021-10-22 18:40:16,572] INFO -------------------------------------------------
+[2021-10-22 18:40:16,572] INFO -------------------------------------------------
+[2021-10-22 18:40:16,572] INFO          dashboard at:          10.36.60.18:19959
+[2021-10-22 18:40:16,572] INFO               Threads:                          1
+[2021-10-22 18:40:16,572] INFO -------------------------------------------------
+[2021-10-22 18:40:16,572] INFO Waiting to connect to:   tcp://10.36.107.28:22637
+[2021-10-22 18:40:16,572] INFO               Threads:                          1
+[2021-10-22 18:40:16,572] INFO Waiting to connect to:   tcp://10.36.107.28:22637
+[2021-10-22 18:40:16,572] INFO -------------------------------------------------
+[2021-10-22 18:40:16,572] INFO               Threads:                          1
+[2021-10-22 18:40:16,572] INFO                Memory:                  16.76 GiB
+[2021-10-22 18:40:16,572] INFO               Threads:                          1
+[2021-10-22 18:40:16,572] INFO                Memory:                  16.76 GiB
+[2021-10-22 18:40:16,572] INFO               Threads:                          1
+[2021-10-22 18:40:16,572] INFO -------------------------------------------------
+[2021-10-22 18:40:16,572] INFO               Threads:                          1
+[2021-10-22 18:40:16,572] INFO       Local Directory: /groups/scicompsoft/home/ackermand/Programming/multiresolution-mesh-creator/dask-worker-space/worker-4rv9nne5
+[2021-10-22 18:40:16,572] INFO                Memory:                  16.76 GiB
+[2021-10-22 18:40:16,572] INFO               Threads:                          1
+[2021-10-22 18:40:16,572] INFO                Memory:                  16.76 GiB
+[2021-10-22 18:40:16,572] INFO                Memory:                  16.76 GiB
+[2021-10-22 18:40:16,572] INFO                Memory:                  16.76 GiB
+[2021-10-22 18:40:16,572] INFO       Local Directory: /groups/scicompsoft/home/ackermand/Programming/multiresolution-mesh-creator/dask-worker-space/worker-e5i3teu1
+[2021-10-22 18:40:16,572] INFO               Threads:                          1
+[2021-10-22 18:40:16,572] INFO       Local Directory: /groups/scicompsoft/home/ackermand/Programming/multiresolution-mesh-creator/dask-worker-space/worker-fpyamanv
+[2021-10-22 18:40:16,572] INFO       Local Directory: /groups/scicompsoft/home/ackermand/Programming/multiresolution-mesh-creator/dask-worker-space/worker-ja51a6d6
+[2021-10-22 18:40:16,572] INFO                Memory:                  16.76 GiB
+[2021-10-22 18:40:16,572] INFO       Local Directory: /groups/scicompsoft/home/ackermand/Programming/multiresolution-mesh-creator/dask-worker-space/worker-65529m6r
+[2021-10-22 18:40:16,572] INFO -------------------------------------------------
+[2021-10-22 18:40:16,572] INFO               Threads:                          1
+[2021-10-22 18:40:16,572] INFO               Threads:                          1
+[2021-10-22 18:40:16,572] INFO                Memory:                  16.76 GiB
+[2021-10-22 18:40:16,572] INFO       Local Directory: /groups/scicompsoft/home/ackermand/Programming/multiresolution-mesh-creator/dask-worker-space/worker-1r1ojmfu
+[2021-10-22 18:40:16,572] INFO -------------------------------------------------
+[2021-10-22 18:40:16,572] INFO               Threads:                          1
+[2021-10-22 18:40:16,572] INFO       Local Directory: /groups/scicompsoft/home/ackermand/Programming/multiresolution-mesh-creator/dask-worker-space/worker-f4qifsc3
+[2021-10-22 18:40:16,572] INFO -------------------------------------------------
+[2021-10-22 18:40:16,572] INFO -------------------------------------------------
+[2021-10-22 18:40:16,572] INFO                Memory:                  16.76 GiB
+[2021-10-22 18:40:16,572] INFO                Memory:                  16.76 GiB
+[2021-10-22 18:40:16,572] INFO -------------------------------------------------
+[2021-10-22 18:40:16,572] INFO       Local Directory: /groups/scicompsoft/home/ackermand/Programming/multiresolution-mesh-creator/dask-worker-space/worker-60490scm
+[2021-10-22 18:40:16,572] INFO       Local Directory: /groups/scicompsoft/home/ackermand/Programming/multiresolution-mesh-creator/dask-worker-space/worker-cxvltdvb
+[2021-10-22 18:40:16,572] INFO                Memory:                  16.76 GiB
+[2021-10-22 18:40:16,572] INFO       Local Directory: /groups/scicompsoft/home/ackermand/Programming/multiresolution-mesh-creator/dask-worker-space/worker-_gtffb2h
+[2021-10-22 18:40:16,572] INFO -------------------------------------------------
+[2021-10-22 18:40:16,572] INFO -------------------------------------------------
+[2021-10-22 18:40:16,572] INFO       Local Directory: /groups/scicompsoft/home/ackermand/Programming/multiresolution-mesh-creator/dask-worker-space/worker-cnt1_aup
+[2021-10-22 18:40:16,572] INFO       Start worker at:    tcp://10.36.60.18:33829
+[2021-10-22 18:40:16,572] INFO -------------------------------------------------
+[2021-10-22 18:40:16,572] INFO -------------------------------------------------
+[2021-10-22 18:40:16,572] INFO -------------------------------------------------
+[2021-10-22 18:40:16,572] INFO -------------------------------------------------
+[2021-10-22 18:40:16,572] INFO          Listening to:    tcp://10.36.60.18:33829
+[2021-10-22 18:40:16,572] INFO          dashboard at:          10.36.60.18:21203
+[2021-10-22 18:40:16,572] INFO Waiting to connect to:   tcp://10.36.107.28:22637
+[2021-10-22 18:40:16,572] INFO -------------------------------------------------
+[2021-10-22 18:40:16,572] INFO       Start worker at:    tcp://10.36.60.18:33979
+[2021-10-22 18:40:16,572] INFO               Threads:                          1
+[2021-10-22 18:40:16,572] INFO                Memory:                  16.76 GiB
+[2021-10-22 18:40:16,572] INFO          Listening to:    tcp://10.36.60.18:33979
+[2021-10-22 18:40:16,572] INFO       Local Directory: /groups/scicompsoft/home/ackermand/Programming/multiresolution-mesh-creator/dask-worker-space/worker-cbahqauu
+[2021-10-22 18:40:16,572] INFO       Start worker at:    tcp://10.36.60.18:19445
+[2021-10-22 18:40:16,572] INFO          dashboard at:          10.36.60.18:34353
+[2021-10-22 18:40:16,572] INFO       Start worker at:    tcp://10.36.60.18:23379
+[2021-10-22 18:40:16,572] INFO Waiting to connect to:   tcp://10.36.107.28:22637
+[2021-10-22 18:40:16,572] INFO          Listening to:    tcp://10.36.60.18:19445
+[2021-10-22 18:40:16,572] INFO -------------------------------------------------
+[2021-10-22 18:40:16,572] INFO -------------------------------------------------
+[2021-10-22 18:40:16,572] INFO       Start worker at:    tcp://10.36.60.18:39135
+[2021-10-22 18:40:16,572] INFO          Listening to:    tcp://10.36.60.18:23379
+[2021-10-22 18:40:16,572] INFO          dashboard at:          10.36.60.18:34021
+[2021-10-22 18:40:16,572] INFO       Start worker at:    tcp://10.36.60.18:25871
+[2021-10-22 18:40:16,572] INFO          Listening to:    tcp://10.36.60.18:39135
+[2021-10-22 18:40:16,572] INFO          dashboard at:          10.36.60.18:35601
+[2021-10-22 18:40:16,572] INFO Waiting to connect to:   tcp://10.36.107.28:22637
+[2021-10-22 18:40:16,572] INFO               Threads:                          1
+[2021-10-22 18:40:16,572] INFO       Start worker at:    tcp://10.36.60.18:34313
+[2021-10-22 18:40:16,572] INFO          Listening to:    tcp://10.36.60.18:25871
+[2021-10-22 18:40:16,572] INFO       Start worker at:    tcp://10.36.60.18:38209
+[2021-10-22 18:40:16,572] INFO -------------------------------------------------
+[2021-10-22 18:40:16,572] INFO       Start worker at:    tcp://10.36.60.18:24399
+[2021-10-22 18:40:16,572] INFO Waiting to connect to:   tcp://10.36.107.28:22637
+[2021-10-22 18:40:16,572] INFO          dashboard at:          10.36.60.18:23575
+[2021-10-22 18:40:16,572] INFO                Memory:                  16.76 GiB
+[2021-10-22 18:40:16,572] INFO       Start worker at:    tcp://10.36.60.18:24737
+[2021-10-22 18:40:16,572] INFO          dashboard at:          10.36.60.18:26129
+[2021-10-22 18:40:16,572] INFO          Listening to:    tcp://10.36.60.18:34313
+[2021-10-22 18:40:16,572] INFO -------------------------------------------------
+[2021-10-22 18:40:16,572] INFO          Listening to:    tcp://10.36.60.18:38209
+[2021-10-22 18:40:16,572] INFO       Local Directory: /groups/scicompsoft/home/ackermand/Programming/multiresolution-mesh-creator/dask-worker-space/worker-i258i3m1
+[2021-10-22 18:40:16,572] INFO Waiting to connect to:   tcp://10.36.107.28:22637
+[2021-10-22 18:40:16,572] INFO          Listening to:    tcp://10.36.60.18:24399
+[2021-10-22 18:40:16,572] INFO Waiting to connect to:   tcp://10.36.107.28:22637
+[2021-10-22 18:40:16,572] INFO          Listening to:    tcp://10.36.60.18:24737
+[2021-10-22 18:40:16,572] INFO               Threads:                          1
+[2021-10-22 18:40:16,572] INFO -------------------------------------------------
+[2021-10-22 18:40:16,572] INFO          dashboard at:          10.36.60.18:26287
+[2021-10-22 18:40:16,572] INFO          dashboard at:          10.36.60.18:30353
+[2021-10-22 18:40:16,572] INFO       Start worker at:    tcp://10.36.60.18:27735
+[2021-10-22 18:40:16,572] INFO -------------------------------------------------
+[2021-10-22 18:40:16,572] INFO          dashboard at:          10.36.60.18:39899
+[2021-10-22 18:40:16,573] INFO          dashboard at:          10.36.60.18:17949
+[2021-10-22 18:40:16,573] INFO -------------------------------------------------
+[2021-10-22 18:40:16,572] INFO               Threads:                          1
+[2021-10-22 18:40:16,573] INFO                Memory:                  16.76 GiB
+[2021-10-22 18:40:16,573] INFO Waiting to connect to:   tcp://10.36.107.28:22637
+[2021-10-22 18:40:16,573] INFO Waiting to connect to:   tcp://10.36.107.28:22637
+[2021-10-22 18:40:16,573] INFO Waiting to connect to:   tcp://10.36.107.28:22637
+[2021-10-22 18:40:16,573] INFO          Listening to:    tcp://10.36.60.18:27735
+[2021-10-22 18:40:16,573] INFO               Threads:                          1
+[2021-10-22 18:40:16,573] INFO Waiting to connect to:   tcp://10.36.107.28:22637
+[2021-10-22 18:40:16,573] INFO                Memory:                  16.76 GiB
+[2021-10-22 18:40:16,573] INFO       Local Directory: /groups/scicompsoft/home/ackermand/Programming/multiresolution-mesh-creator/dask-worker-space/worker-s59q520z
+[2021-10-22 18:40:16,573] INFO -------------------------------------------------
+[2021-10-22 18:40:16,573] INFO -------------------------------------------------
+[2021-10-22 18:40:16,572] INFO       Start worker at:    tcp://10.36.60.18:31607
+[2021-10-22 18:40:16,573] INFO               Threads:                          1
+[2021-10-22 18:40:16,573] INFO -------------------------------------------------
+[2021-10-22 18:40:16,573] INFO -------------------------------------------------
+[2021-10-22 18:40:16,572] INFO       Start worker at:    tcp://10.36.60.18:26363
+[2021-10-22 18:40:16,573] INFO          dashboard at:          10.36.60.18:35307
+[2021-10-22 18:40:16,573] INFO       Local Directory: /groups/scicompsoft/home/ackermand/Programming/multiresolution-mesh-creator/dask-worker-space/worker-eledgeoj
+[2021-10-22 18:40:16,573] INFO                Memory:                  16.76 GiB
+[2021-10-22 18:40:16,572] INFO       Start worker at:    tcp://10.36.60.18:17201
+[2021-10-22 18:40:16,573] INFO                Memory:                  16.76 GiB
+[2021-10-22 18:40:16,573] INFO          Listening to:    tcp://10.36.60.18:31607
+[2021-10-22 18:40:16,573] INFO       Local Directory: /groups/scicompsoft/home/ackermand/Programming/multiresolution-mesh-creator/dask-worker-space/worker-_q56rwb8
+[2021-10-22 18:40:16,573] INFO -------------------------------------------------
+[2021-10-22 18:40:16,573] INFO Waiting to connect to:   tcp://10.36.107.28:22637
+[2021-10-22 18:40:16,573] INFO               Threads:                          1
+[2021-10-22 18:40:16,573] INFO          Listening to:    tcp://10.36.60.18:26363
+[2021-10-22 18:40:16,573] INFO               Threads:                          1
+[2021-10-22 18:40:16,573] INFO       Local Directory: /groups/scicompsoft/home/ackermand/Programming/multiresolution-mesh-creator/dask-worker-space/worker-i532fc0v
+[2021-10-22 18:40:16,573] INFO               Threads:                          1
+[2021-10-22 18:40:16,573] INFO               Threads:                          1
+[2021-10-22 18:40:16,573] INFO -------------------------------------------------
+[2021-10-22 18:40:16,573] INFO          dashboard at:          10.36.60.18:16451
+[2021-10-22 18:40:16,573] INFO          Listening to:    tcp://10.36.60.18:17201
+[2021-10-22 18:40:16,573] INFO -------------------------------------------------
+[2021-10-22 18:40:16,573] INFO                Memory:                  16.76 GiB
+[2021-10-22 18:40:16,573] INFO                Memory:                  16.76 GiB
+[2021-10-22 18:40:16,573] INFO          dashboard at:          10.36.60.18:38353
+[2021-10-22 18:40:16,573] INFO                Memory:                  16.76 GiB
+[2021-10-22 18:40:16,573] INFO                Memory:                  16.76 GiB
+[2021-10-22 18:40:16,573] INFO Waiting to connect to:   tcp://10.36.107.28:22637
+[2021-10-22 18:40:16,573] INFO -------------------------------------------------
+[2021-10-22 18:40:16,573] INFO       Local Directory: /groups/scicompsoft/home/ackermand/Programming/multiresolution-mesh-creator/dask-worker-space/worker-ulxlut2z
+[2021-10-22 18:40:16,573] INFO          dashboard at:          10.36.60.18:35841
+[2021-10-22 18:40:16,573] INFO       Local Directory: /groups/scicompsoft/home/ackermand/Programming/multiresolution-mesh-creator/dask-worker-space/worker-037fv49w
+[2021-10-22 18:40:16,573] INFO -------------------------------------------------
+[2021-10-22 18:40:16,573] INFO Waiting to connect to:   tcp://10.36.107.28:22637
+[2021-10-22 18:40:16,573] INFO               Threads:                          1
+[2021-10-22 18:40:16,573] INFO       Local Directory: /groups/scicompsoft/home/ackermand/Programming/multiresolution-mesh-creator/dask-worker-space/worker-i0447xix
+[2021-10-22 18:40:16,573] INFO       Local Directory: /groups/scicompsoft/home/ackermand/Programming/multiresolution-mesh-creator/dask-worker-space/worker-viqpw_dm
+[2021-10-22 18:40:16,573] INFO -------------------------------------------------
+[2021-10-22 18:40:16,573] INFO Waiting to connect to:   tcp://10.36.107.28:22637
+[2021-10-22 18:40:16,573] INFO -------------------------------------------------
+[2021-10-22 18:40:16,573] INFO                Memory:                  16.76 GiB
+[2021-10-22 18:40:16,573] INFO -------------------------------------------------
+[2021-10-22 18:40:16,573] INFO -------------------------------------------------
+[2021-10-22 18:40:16,573] INFO -------------------------------------------------
+[2021-10-22 18:40:16,573] INFO -------------------------------------------------
+[2021-10-22 18:40:16,573] INFO       Local Directory: /groups/scicompsoft/home/ackermand/Programming/multiresolution-mesh-creator/dask-worker-space/worker-kvi5v7jw
+[2021-10-22 18:40:16,573] INFO -------------------------------------------------
+[2021-10-22 18:40:16,573] INFO               Threads:                          1
+[2021-10-22 18:40:16,573] INFO               Threads:                          1
+[2021-10-22 18:40:16,573] INFO               Threads:                          1
+[2021-10-22 18:40:16,573] INFO                Memory:                  16.76 GiB
+[2021-10-22 18:40:16,573] INFO       Start worker at:    tcp://10.36.60.18:26255
+[2021-10-22 18:40:16,573] INFO -------------------------------------------------
+[2021-10-22 18:40:16,573] INFO                Memory:                  16.76 GiB
+[2021-10-22 18:40:16,573] INFO                Memory:                  16.76 GiB
+[2021-10-22 18:40:16,573] INFO       Local Directory: /groups/scicompsoft/home/ackermand/Programming/multiresolution-mesh-creator/dask-worker-space/worker-v1vnlcgm
+[2021-10-22 18:40:16,573] INFO       Local Directory: /groups/scicompsoft/home/ackermand/Programming/multiresolution-mesh-creator/dask-worker-space/worker-68m480bl
+[2021-10-22 18:40:16,573] INFO          Listening to:    tcp://10.36.60.18:26255
+[2021-10-22 18:40:16,573] INFO       Local Directory: /groups/scicompsoft/home/ackermand/Programming/multiresolution-mesh-creator/dask-worker-space/worker-fkkym0h1
+[2021-10-22 18:40:16,573] INFO          dashboard at:          10.36.60.18:24761
+[2021-10-22 18:40:16,573] INFO -------------------------------------------------
+[2021-10-22 18:40:16,573] INFO -------------------------------------------------
+[2021-10-22 18:40:16,573] INFO Waiting to connect to:   tcp://10.36.107.28:22637
+[2021-10-22 18:40:16,573] INFO -------------------------------------------------
+[2021-10-22 18:40:16,573] INFO -------------------------------------------------
+[2021-10-22 18:40:16,573] INFO               Threads:                          1
+[2021-10-22 18:40:16,573] INFO                Memory:                  16.76 GiB
+[2021-10-22 18:40:16,573] INFO       Local Directory: /groups/scicompsoft/home/ackermand/Programming/multiresolution-mesh-creator/dask-worker-space/worker-ejco6rvq
+[2021-10-22 18:40:16,573] INFO       Start worker at:    tcp://10.36.60.18:31699
+[2021-10-22 18:40:16,573] INFO -------------------------------------------------
+[2021-10-22 18:40:16,573] INFO          Listening to:    tcp://10.36.60.18:31699
+[2021-10-22 18:40:16,573] INFO       Start worker at:    tcp://10.36.60.18:30683
+[2021-10-22 18:40:16,573] INFO          dashboard at:          10.36.60.18:29533
+[2021-10-22 18:40:16,573] INFO          Listening to:    tcp://10.36.60.18:30683
+[2021-10-22 18:40:16,573] INFO Waiting to connect to:   tcp://10.36.107.28:22637
+[2021-10-22 18:40:16,573] INFO -------------------------------------------------
+[2021-10-22 18:40:16,573] INFO          dashboard at:          10.36.60.18:21935
+[2021-10-22 18:40:16,573] INFO Waiting to connect to:   tcp://10.36.107.28:22637
+[2021-10-22 18:40:16,573] INFO -------------------------------------------------
+[2021-10-22 18:40:16,573] INFO               Threads:                          1
+[2021-10-22 18:40:16,571] INFO       Start worker at:    tcp://10.36.60.18:21297
+[2021-10-22 18:40:16,573] INFO                Memory:                  16.76 GiB
+[2021-10-22 18:40:16,573] INFO               Threads:                          1
+[2021-10-22 18:40:16,573] INFO       Local Directory: /groups/scicompsoft/home/ackermand/Programming/multiresolution-mesh-creator/dask-worker-space/worker-l25cax5z
+[2021-10-22 18:40:16,573] INFO                Memory:                  16.76 GiB
+[2021-10-22 18:40:16,573] INFO          Listening to:    tcp://10.36.60.18:21297
+[2021-10-22 18:40:16,573] INFO       Local Directory: /groups/scicompsoft/home/ackermand/Programming/multiresolution-mesh-creator/dask-worker-space/worker-8i84avhz
+[2021-10-22 18:40:16,572] INFO               Threads:                          1
+[2021-10-22 18:40:16,573] INFO          dashboard at:          10.36.60.18:31235
+[2021-10-22 18:40:16,573] INFO -------------------------------------------------
+[2021-10-22 18:40:16,574] INFO -------------------------------------------------
+[2021-10-22 18:40:16,574] INFO Waiting to connect to:   tcp://10.36.107.28:22637
+[2021-10-22 18:40:16,574] INFO                Memory:                  16.76 GiB
+[2021-10-22 18:40:16,574] INFO -------------------------------------------------
+[2021-10-22 18:40:16,574] INFO       Local Directory: /groups/scicompsoft/home/ackermand/Programming/multiresolution-mesh-creator/dask-worker-space/worker-6k7496ma
+[2021-10-22 18:40:16,574] INFO               Threads:                          1
+[2021-10-22 18:40:16,574] INFO -------------------------------------------------
+[2021-10-22 18:40:16,574] INFO                Memory:                  16.76 GiB
+[2021-10-22 18:40:16,574] INFO       Local Directory: /groups/scicompsoft/home/ackermand/Programming/multiresolution-mesh-creator/dask-worker-space/worker-ngqsor55
+[2021-10-22 18:40:16,574] INFO -------------------------------------------------
+[2021-10-22 18:40:16,574] INFO       Start worker at:    tcp://10.36.60.18:30277
+[2021-10-22 18:40:16,574] INFO       Start worker at:    tcp://10.36.60.18:29307
+[2021-10-22 18:40:16,574] INFO          Listening to:    tcp://10.36.60.18:30277
+[2021-10-22 18:40:16,574] INFO          Listening to:    tcp://10.36.60.18:29307
+[2021-10-22 18:40:16,574] INFO          dashboard at:          10.36.60.18:33731
+[2021-10-22 18:40:16,574] INFO Waiting to connect to:   tcp://10.36.107.28:22637
+[2021-10-22 18:40:16,574] INFO          dashboard at:          10.36.60.18:29757
+[2021-10-22 18:40:16,574] INFO -------------------------------------------------
+[2021-10-22 18:40:16,574] INFO Waiting to connect to:   tcp://10.36.107.28:22637
+[2021-10-22 18:40:16,574] INFO -------------------------------------------------
+[2021-10-22 18:40:16,574] INFO       Start worker at:    tcp://10.36.60.18:34983
+[2021-10-22 18:40:16,574] INFO               Threads:                          1
+[2021-10-22 18:40:16,574] INFO       Start worker at:    tcp://10.36.60.18:19877
+[2021-10-22 18:40:16,574] INFO       Start worker at:    tcp://10.36.60.18:24633
+[2021-10-22 18:40:16,574] INFO          Listening to:    tcp://10.36.60.18:34983
+[2021-10-22 18:40:16,574] INFO               Threads:                          1
+[2021-10-22 18:40:16,574] INFO                Memory:                  16.76 GiB
+[2021-10-22 18:40:16,574] INFO          Listening to:    tcp://10.36.60.18:19877
+[2021-10-22 18:40:16,574] INFO          dashboard at:          10.36.60.18:23141
+[2021-10-22 18:40:16,574] INFO          Listening to:    tcp://10.36.60.18:24633
+[2021-10-22 18:40:16,574] INFO       Local Directory: /groups/scicompsoft/home/ackermand/Programming/multiresolution-mesh-creator/dask-worker-space/worker-g5fzymrs
+[2021-10-22 18:40:16,574] INFO                Memory:                  16.76 GiB
+[2021-10-22 18:40:16,574] INFO Waiting to connect to:   tcp://10.36.107.28:22637
+[2021-10-22 18:40:16,574] INFO          dashboard at:          10.36.60.18:37269
+[2021-10-22 18:40:16,574] INFO          dashboard at:          10.36.60.18:28645
+[2021-10-22 18:40:16,574] INFO       Local Directory: /groups/scicompsoft/home/ackermand/Programming/multiresolution-mesh-creator/dask-worker-space/worker-u0go1iir
+[2021-10-22 18:40:16,574] INFO -------------------------------------------------
+[2021-10-22 18:40:16,574] INFO Waiting to connect to:   tcp://10.36.107.28:22637
+[2021-10-22 18:40:16,574] INFO -------------------------------------------------
+[2021-10-22 18:40:16,574] INFO Waiting to connect to:   tcp://10.36.107.28:22637
+[2021-10-22 18:40:16,574] INFO -------------------------------------------------
+[2021-10-22 18:40:16,574] INFO -------------------------------------------------
+[2021-10-22 18:40:16,574] INFO -------------------------------------------------
+[2021-10-22 18:40:16,574] INFO               Threads:                          1
+[2021-10-22 18:40:16,574] INFO               Threads:                          1
+[2021-10-22 18:40:16,575] INFO                Memory:                  16.76 GiB
+[2021-10-22 18:40:16,575] INFO                Memory:                  16.76 GiB
+[2021-10-22 18:40:16,575] INFO       Local Directory: /groups/scicompsoft/home/ackermand/Programming/multiresolution-mesh-creator/dask-worker-space/worker-he8hrq09
+[2021-10-22 18:40:16,574] INFO               Threads:                          1
+[2021-10-22 18:40:16,575] INFO       Local Directory: /groups/scicompsoft/home/ackermand/Programming/multiresolution-mesh-creator/dask-worker-space/worker-1hb8td_e
+[2021-10-22 18:40:16,575] INFO                Memory:                  16.76 GiB
+[2021-10-22 18:40:16,575] INFO -------------------------------------------------
+[2021-10-22 18:40:16,575] INFO -------------------------------------------------
+[2021-10-22 18:40:16,575] INFO       Local Directory: /groups/scicompsoft/home/ackermand/Programming/multiresolution-mesh-creator/dask-worker-space/worker-fg4hlot5
+[2021-10-22 18:40:16,575] INFO -------------------------------------------------
+[2021-10-22 18:40:16,575] INFO       Start worker at:    tcp://10.36.60.18:37183
+[2021-10-22 18:40:16,575] INFO          Listening to:    tcp://10.36.60.18:37183
+[2021-10-22 18:40:16,575] INFO          dashboard at:          10.36.60.18:28271
+[2021-10-22 18:40:16,575] INFO Waiting to connect to:   tcp://10.36.107.28:22637
+[2021-10-22 18:40:16,575] INFO       Start worker at:    tcp://10.36.60.18:26983
+[2021-10-22 18:40:16,575] INFO       Start worker at:    tcp://10.36.60.18:18597
+[2021-10-22 18:40:16,575] INFO -------------------------------------------------
+[2021-10-22 18:40:16,575] INFO          Listening to:    tcp://10.36.60.18:26983
+[2021-10-22 18:40:16,575] INFO          Listening to:    tcp://10.36.60.18:18597
+[2021-10-22 18:40:16,575] INFO          dashboard at:          10.36.60.18:39751
+[2021-10-22 18:40:16,575] INFO          dashboard at:          10.36.60.18:32875
+[2021-10-22 18:40:16,575] INFO Waiting to connect to:   tcp://10.36.107.28:22637
+[2021-10-22 18:40:16,576] INFO -------------------------------------------------
+[2021-10-22 18:40:16,575] INFO               Threads:                          1
+[2021-10-22 18:40:16,576] INFO Waiting to connect to:   tcp://10.36.107.28:22637
+[2021-10-22 18:40:16,576] INFO -------------------------------------------------
+[2021-10-22 18:40:16,576] INFO                Memory:                  16.76 GiB
+[2021-10-22 18:40:16,576] INFO               Threads:                          1
+[2021-10-22 18:40:16,576] INFO               Threads:                          1
+[2021-10-22 18:40:16,576] INFO                Memory:                  16.76 GiB
+[2021-10-22 18:40:16,576] INFO       Local Directory: /groups/scicompsoft/home/ackermand/Programming/multiresolution-mesh-creator/dask-worker-space/worker-_pw96a79
+[2021-10-22 18:40:16,575] INFO       Start worker at:    tcp://10.36.60.18:15845
+[2021-10-22 18:40:16,576] INFO       Local Directory: /groups/scicompsoft/home/ackermand/Programming/multiresolution-mesh-creator/dask-worker-space/worker-rog6nwgq
+[2021-10-22 18:40:16,576] INFO                Memory:                  16.76 GiB
+[2021-10-22 18:40:16,576] INFO          Listening to:    tcp://10.36.60.18:15845
+[2021-10-22 18:40:16,576] INFO       Local Directory: /groups/scicompsoft/home/ackermand/Programming/multiresolution-mesh-creator/dask-worker-space/worker-oc74tzke
+[2021-10-22 18:40:16,576] INFO -------------------------------------------------
+[2021-10-22 18:40:16,576] INFO -------------------------------------------------
+[2021-10-22 18:40:16,576] INFO          dashboard at:          10.36.60.18:20993
+[2021-10-22 18:40:16,576] INFO -------------------------------------------------
+[2021-10-22 18:40:16,576] INFO Waiting to connect to:   tcp://10.36.107.28:22637
+[2021-10-22 18:40:16,576] INFO -------------------------------------------------
+[2021-10-22 18:40:16,576] INFO               Threads:                          1
+[2021-10-22 18:40:16,576] INFO                Memory:                  16.76 GiB
+[2021-10-22 18:40:16,576] INFO       Local Directory: /groups/scicompsoft/home/ackermand/Programming/multiresolution-mesh-creator/dask-worker-space/worker-cdapbyho
+[2021-10-22 18:40:16,576] INFO -------------------------------------------------
+[2021-10-22 18:40:16,576] INFO       Start worker at:    tcp://10.36.60.18:18129
+[2021-10-22 18:40:16,576] INFO          Listening to:    tcp://10.36.60.18:18129
+[2021-10-22 18:40:16,576] INFO          dashboard at:          10.36.60.18:32973
+[2021-10-22 18:40:16,576] INFO Waiting to connect to:   tcp://10.36.107.28:22637
+[2021-10-22 18:40:16,576] INFO -------------------------------------------------
+[2021-10-22 18:40:16,576] INFO               Threads:                          1
+[2021-10-22 18:40:16,576] INFO                Memory:                  16.76 GiB
+[2021-10-22 18:40:16,576] INFO       Local Directory: /groups/scicompsoft/home/ackermand/Programming/multiresolution-mesh-creator/dask-worker-space/worker-tnb3sf89
+[2021-10-22 18:40:16,577] INFO -------------------------------------------------
+[2021-10-22 18:40:16,881] INFO         Registered to:   tcp://10.36.107.28:22637
+[2021-10-22 18:40:16,881] INFO -------------------------------------------------
+[2021-10-22 18:40:16,882] INFO Starting established connection
+[2021-10-22 18:40:16,889] INFO         Registered to:   tcp://10.36.107.28:22637
+[2021-10-22 18:40:16,889] INFO -------------------------------------------------
+[2021-10-22 18:40:16,890] INFO         Registered to:   tcp://10.36.107.28:22637
+[2021-10-22 18:40:16,890] INFO -------------------------------------------------
+[2021-10-22 18:40:16,890] INFO Starting established connection
+[2021-10-22 18:40:16,890] INFO Starting established connection
+[2021-10-22 18:40:16,890] INFO         Registered to:   tcp://10.36.107.28:22637
+[2021-10-22 18:40:16,890] INFO -------------------------------------------------
+[2021-10-22 18:40:16,891] INFO Starting established connection
+[2021-10-22 18:40:16,902] INFO         Registered to:   tcp://10.36.107.28:22637
+[2021-10-22 18:40:16,902] INFO -------------------------------------------------
+[2021-10-22 18:40:16,903] INFO         Registered to:   tcp://10.36.107.28:22637
+[2021-10-22 18:40:16,903] INFO Starting established connection
+[2021-10-22 18:40:16,903] INFO -------------------------------------------------
+[2021-10-22 18:40:16,903] INFO         Registered to:   tcp://10.36.107.28:22637
+[2021-10-22 18:40:16,903] INFO -------------------------------------------------
+[2021-10-22 18:40:16,904] INFO Starting established connection
+[2021-10-22 18:40:16,904] INFO Starting established connection
+[2021-10-22 18:40:16,905] INFO         Registered to:   tcp://10.36.107.28:22637
+[2021-10-22 18:40:16,905] INFO -------------------------------------------------
+[2021-10-22 18:40:16,905] INFO Starting established connection
+[2021-10-22 18:40:16,906] INFO         Registered to:   tcp://10.36.107.28:22637
+[2021-10-22 18:40:16,906] INFO -------------------------------------------------
+[2021-10-22 18:40:16,906] INFO Starting established connection
+[2021-10-22 18:40:16,912] INFO         Registered to:   tcp://10.36.107.28:22637
+[2021-10-22 18:40:16,912] INFO -------------------------------------------------
+[2021-10-22 18:40:16,913] INFO Starting established connection
+[2021-10-22 18:40:16,917] INFO         Registered to:   tcp://10.36.107.28:22637
+[2021-10-22 18:40:16,917] INFO -------------------------------------------------
+[2021-10-22 18:40:16,918] INFO Starting established connection
+[2021-10-22 18:40:16,920] INFO         Registered to:   tcp://10.36.107.28:22637
+[2021-10-22 18:40:16,920] INFO -------------------------------------------------
+[2021-10-22 18:40:16,921] INFO Starting established connection
+[2021-10-22 18:40:16,926] INFO         Registered to:   tcp://10.36.107.28:22637
+[2021-10-22 18:40:16,926] INFO -------------------------------------------------
+[2021-10-22 18:40:16,927] INFO Starting established connection
+[2021-10-22 18:40:16,930] INFO         Registered to:   tcp://10.36.107.28:22637
+[2021-10-22 18:40:16,931] INFO -------------------------------------------------
+[2021-10-22 18:40:16,931] INFO Starting established connection
+[2021-10-22 18:40:16,932] INFO         Registered to:   tcp://10.36.107.28:22637
+[2021-10-22 18:40:16,933] INFO -------------------------------------------------
+[2021-10-22 18:40:16,934] INFO Starting established connection
+[2021-10-22 18:40:16,936] INFO         Registered to:   tcp://10.36.107.28:22637
+[2021-10-22 18:40:16,936] INFO -------------------------------------------------
+[2021-10-22 18:40:16,937] INFO Starting established connection
+[2021-10-22 18:40:16,938] INFO         Registered to:   tcp://10.36.107.28:22637
+[2021-10-22 18:40:16,938] INFO -------------------------------------------------
+[2021-10-22 18:40:16,939] INFO Starting established connection
+[2021-10-22 18:40:16,940] INFO         Registered to:   tcp://10.36.107.28:22637
+[2021-10-22 18:40:16,940] INFO -------------------------------------------------
+[2021-10-22 18:40:16,940] INFO Starting established connection
+[2021-10-22 18:40:16,944] INFO         Registered to:   tcp://10.36.107.28:22637
+[2021-10-22 18:40:16,944] INFO -------------------------------------------------
+[2021-10-22 18:40:16,945] INFO Starting established connection
+[2021-10-22 18:40:16,945] INFO         Registered to:   tcp://10.36.107.28:22637
+[2021-10-22 18:40:16,945] INFO -------------------------------------------------
+[2021-10-22 18:40:16,946] INFO Starting established connection
+[2021-10-22 18:40:16,946] INFO         Registered to:   tcp://10.36.107.28:22637
+[2021-10-22 18:40:16,946] INFO -------------------------------------------------
+[2021-10-22 18:40:16,947] INFO Starting established connection
+[2021-10-22 18:40:16,947] INFO         Registered to:   tcp://10.36.107.28:22637
+[2021-10-22 18:40:16,948] INFO -------------------------------------------------
+[2021-10-22 18:40:16,948] INFO Starting established connection
+[2021-10-22 18:40:16,949] INFO         Registered to:   tcp://10.36.107.28:22637
+[2021-10-22 18:40:16,950] INFO -------------------------------------------------
+[2021-10-22 18:40:16,950] INFO Starting established connection
+[2021-10-22 18:40:16,952] INFO         Registered to:   tcp://10.36.107.28:22637
+[2021-10-22 18:40:16,952] INFO -------------------------------------------------
+[2021-10-22 18:40:16,953] INFO Starting established connection
+[2021-10-22 18:40:16,953] INFO         Registered to:   tcp://10.36.107.28:22637
+[2021-10-22 18:40:16,953] INFO -------------------------------------------------
+[2021-10-22 18:40:16,953] INFO Starting established connection
+[2021-10-22 18:40:16,958] INFO         Registered to:   tcp://10.36.107.28:22637
+[2021-10-22 18:40:16,958] INFO -------------------------------------------------
+[2021-10-22 18:40:16,959] INFO Starting established connection
+[2021-10-22 18:40:16,960] INFO         Registered to:   tcp://10.36.107.28:22637
+[2021-10-22 18:40:16,961] INFO -------------------------------------------------
+[2021-10-22 18:40:16,961] INFO Starting established connection
+[2021-10-22 18:40:16,964] INFO         Registered to:   tcp://10.36.107.28:22637
+[2021-10-22 18:40:16,964] INFO -------------------------------------------------
+[2021-10-22 18:40:16,964] INFO Starting established connection
+[2021-10-22 18:40:16,970] INFO         Registered to:   tcp://10.36.107.28:22637
+[2021-10-22 18:40:16,971] INFO -------------------------------------------------
+[2021-10-22 18:40:16,971] INFO Starting established connection
+[2021-10-22 18:40:16,976] INFO         Registered to:   tcp://10.36.107.28:22637
+[2021-10-22 18:40:16,976] INFO -------------------------------------------------
+[2021-10-22 18:40:16,977] INFO Starting established connection
+[2021-10-22 18:40:16,977] INFO         Registered to:   tcp://10.36.107.28:22637
+[2021-10-22 18:40:16,978] INFO -------------------------------------------------
+[2021-10-22 18:40:16,978] INFO Starting established connection
+[2021-10-22 18:40:16,979] INFO         Registered to:   tcp://10.36.107.28:22637
+[2021-10-22 18:40:16,979] INFO -------------------------------------------------
+[2021-10-22 18:40:16,980] INFO Starting established connection
+[2021-10-22 18:40:16,980] INFO         Registered to:   tcp://10.36.107.28:22637
+[2021-10-22 18:40:16,980] INFO -------------------------------------------------
+[2021-10-22 18:40:16,981] INFO Starting established connection
+[2021-10-22 18:40:16,982] INFO         Registered to:   tcp://10.36.107.28:22637
+[2021-10-22 18:40:16,983] INFO -------------------------------------------------
+[2021-10-22 18:40:16,983] INFO         Registered to:   tcp://10.36.107.28:22637
+[2021-10-22 18:40:16,983] INFO -------------------------------------------------
+[2021-10-22 18:40:16,983] INFO Starting established connection
+[2021-10-22 18:40:16,983] INFO Starting established connection
+[2021-10-22 18:40:16,985] INFO         Registered to:   tcp://10.36.107.28:22637
+[2021-10-22 18:40:16,985] INFO -------------------------------------------------
+[2021-10-22 18:40:16,985] INFO Starting established connection
+[2021-10-22 18:40:16,985] INFO         Registered to:   tcp://10.36.107.28:22637
+[2021-10-22 18:40:16,986] INFO -------------------------------------------------
+[2021-10-22 18:40:16,986] INFO Starting established connection
+[2021-10-22 18:40:16,987] INFO         Registered to:   tcp://10.36.107.28:22637
+[2021-10-22 18:40:16,987] INFO -------------------------------------------------
+[2021-10-22 18:40:16,987] INFO Starting established connection
+[2021-10-22 18:40:16,988] INFO         Registered to:   tcp://10.36.107.28:22637
+[2021-10-22 18:40:16,988] INFO -------------------------------------------------
+[2021-10-22 18:40:16,988] INFO Starting established connection
+[2021-10-22 18:40:16,988] INFO         Registered to:   tcp://10.36.107.28:22637
+[2021-10-22 18:40:16,989] INFO -------------------------------------------------
+[2021-10-22 18:40:16,989] INFO Starting established connection
+[2021-10-22 18:41:47,516] INFO full garbage collection released 67.92 MiB from 205 reference cycles (threshold: 9.54 MiB)
+[2021-10-22 18:41:48,104] INFO full garbage collection released 191.86 MiB from 639 reference cycles (threshold: 9.54 MiB)
+/groups/scicompsoft/home/ackermand/miniconda3/envs/multiresolution_mesh_creator/lib/python3.7/site-packages/distributed/worker.py:3801: UserWarning: Large object of size 15.46 MiB detected in task graph: 
+  (array([[61184.        ,  2396.36      , 28807.1   ... ), 238, 240, 0)
+Consider scattering large objects ahead of time
+with client.scatter to reduce scheduler burden and 
+keep data on workers
+
+    future = client.submit(func, big_data)    # bad
+
+    big_future = client.scatter(big_data)     # good
+    future = client.submit(func, big_future)  # good
+  % (format_bytes(len(b)), s)
+[2021-10-22 18:47:16,771] INFO full garbage collection released 529.29 MiB from 47 reference cycles (threshold: 9.54 MiB)
+/groups/scicompsoft/home/ackermand/miniconda3/envs/multiresolution_mesh_creator/lib/python3.7/site-packages/distributed/worker.py:3801: UserWarning: Large object of size 2.27 MiB detected in task graph: 
+  (array([[25651.2       ,   438.605     , 57072.    ... ), 100, 102, 0)
+Consider scattering large objects ahead of time
+with client.scatter to reduce scheduler burden and 
+keep data on workers
+
+    future = client.submit(func, big_data)    # bad
+
+    big_future = client.scatter(big_data)     # good
+    future = client.submit(func, big_future)  # good
+  % (format_bytes(len(b)), s)
+[2021-10-22 18:47:51,749] INFO full garbage collection released 646.25 MiB from 26 reference cycles (threshold: 9.54 MiB)
+[2021-10-22 18:50:11,104] INFO full garbage collection released 633.23 MiB from 26 reference cycles (threshold: 9.54 MiB)
+[2021-10-22 18:51:01,536] INFO full garbage collection released 273.81 MiB from 26 reference cycles (threshold: 9.54 MiB)
+[2021-10-22 18:51:17,526] INFO full garbage collection released 92.50 MiB from 26 reference cycles (threshold: 9.54 MiB)
+[2021-10-22 18:51:28,426] INFO End worker
+[2021-10-22 18:51:28,426] INFO Stopping worker at tcp://10.36.60.18:21297
+[2021-10-22 18:51:28,426] INFO Stopping worker at tcp://10.36.60.18:37183
+[2021-10-22 18:51:28,426] INFO Stopping worker at tcp://10.36.60.18:26255
+[2021-10-22 18:51:28,426] INFO Stopping worker at tcp://10.36.60.18:28451
+/groups/scicompsoft/home/ackermand/miniconda3/envs/multiresolution_mesh_creator/lib/python3.7/site-packages/distributed/worker.py:3801: UserWarning: Large object of size 1.48 MiB detected in task graph: 
+  (array([[ 2938.88      ,   405.577     , 53211.5   ... 0]), 11, 12, 0)
+Consider scattering large objects ahead of time
+with client.scatter to reduce scheduler burden and 
+keep data on workers
+
+    future = client.submit(func, big_data)    # bad
+
+    big_future = client.scatter(big_data)     # good
+    future = client.submit(func, big_future)  # good
+  % (format_bytes(len(b)), s)
+[2021-10-22 18:51:28,426] INFO Stopping worker at tcp://10.36.60.18:33829
+[2021-10-22 18:51:28,426] INFO Stopping worker at tcp://10.36.60.18:30683
+[2021-10-22 18:51:28,426] INFO Stopping worker at tcp://10.36.60.18:24633
+[2021-10-22 18:51:28,426] INFO Stopping worker at tcp://10.36.60.18:26983
+[2021-10-22 18:51:28,426] INFO Stopping worker at tcp://10.36.60.18:17201
+[2021-10-22 18:51:28,426] INFO Stopping worker at tcp://10.36.60.18:19877
+[2021-10-22 18:51:28,426] INFO Stopping worker at tcp://10.36.60.18:28975
+[2021-10-22 18:51:28,426] INFO Stopping worker at tcp://10.36.60.18:34313
+[2021-10-22 18:51:28,426] INFO Stopping worker at tcp://10.36.60.18:27735
+[2021-10-22 18:51:28,426] INFO Stopping worker at tcp://10.36.60.18:26363
+[2021-10-22 18:51:28,426] INFO Stopping worker at tcp://10.36.60.18:20859
+[2021-10-22 18:51:28,426] INFO Stopping worker at tcp://10.36.60.18:24399
+[2021-10-22 18:51:28,426] INFO Stopping worker at tcp://10.36.60.18:23913
+[2021-10-22 18:51:28,426] INFO Stopping worker at tcp://10.36.60.18:15845
+[2021-10-22 18:51:28,426] INFO Stopping worker at tcp://10.36.60.18:18129
+[2021-10-22 18:51:28,426] INFO Stopping worker at tcp://10.36.60.18:18597
+[2021-10-22 18:51:28,426] INFO Stopping worker at tcp://10.36.60.18:23379
+[2021-10-22 18:51:28,426] INFO Stopping worker at tcp://10.36.60.18:29345
+[2021-10-22 18:51:28,426] INFO Stopping worker at tcp://10.36.60.18:33307
+[2021-10-22 18:51:28,426] INFO Stopping worker at tcp://10.36.60.18:25871
+[2021-10-22 18:51:28,426] INFO Stopping worker at tcp://10.36.60.18:33979
+[2021-10-22 18:51:28,426] INFO Stopping worker at tcp://10.36.60.18:31607
+[2021-10-22 18:51:28,426] INFO Stopping worker at tcp://10.36.60.18:19445
+[2021-10-22 18:51:28,426] INFO Stopping worker at tcp://10.36.60.18:30277
+[2021-10-22 18:51:28,426] INFO reaping stray process <SpawnProcess(Dask Worker process (from Nanny), started daemon)>
+[2021-10-22 18:51:28,427] INFO reaping stray process <SpawnProcess(Dask Worker process (from Nanny), started daemon)>
+[2021-10-22 18:51:28,427] INFO reaping stray process <SpawnProcess(Dask Worker process (from Nanny), started daemon)>
+[2021-10-22 18:51:28,427] INFO reaping stray process <SpawnProcess(Dask Worker process (from Nanny), started daemon)>
+[2021-10-22 18:51:28,427] INFO reaping stray process <SpawnProcess(Dask Worker process (from Nanny), started daemon)>
+[2021-10-22 18:51:28,427] INFO reaping stray process <SpawnProcess(Dask Worker process (from Nanny), started daemon)>
+[2021-10-22 18:51:28,427] INFO reaping stray process <SpawnProcess(Dask Worker process (from Nanny), started daemon)>
+[2021-10-22 18:51:28,428] INFO reaping stray process <SpawnProcess(Dask Worker process (from Nanny), started daemon)>
+[2021-10-22 18:51:28,428] INFO reaping stray process <SpawnProcess(Dask Worker process (from Nanny), started daemon)>
+[2021-10-22 18:51:28,428] INFO reaping stray process <SpawnProcess(Dask Worker process (from Nanny), started daemon)>
+[2021-10-22 18:51:28,428] INFO reaping stray process <SpawnProcess(Dask Worker process (from Nanny), started daemon)>
+[2021-10-22 18:51:28,428] INFO reaping stray process <SpawnProcess(Dask Worker process (from Nanny), started daemon)>
+[2021-10-22 18:51:28,428] INFO reaping stray process <SpawnProcess(Dask Worker process (from Nanny), started daemon)>
+[2021-10-22 18:51:28,428] INFO reaping stray process <SpawnProcess(Dask Worker process (from Nanny), started daemon)>
+[2021-10-22 18:51:28,428] INFO reaping stray process <SpawnProcess(Dask Worker process (from Nanny), started daemon)>
+[2021-10-22 18:51:28,428] INFO reaping stray process <SpawnProcess(Dask Worker process (from Nanny), started daemon)>
+[2021-10-22 18:51:28,428] INFO reaping stray process <SpawnProcess(Dask Worker process (from Nanny), started daemon)>
+[2021-10-22 18:51:28,429] INFO reaping stray process <SpawnProcess(Dask Worker process (from Nanny), started daemon)>
+[2021-10-22 18:51:28,429] INFO reaping stray process <SpawnProcess(Dask Worker process (from Nanny), started daemon)>
+[2021-10-22 18:51:28,429] INFO reaping stray process <SpawnProcess(Dask Worker process (from Nanny), started daemon)>
+[2021-10-22 18:51:28,429] INFO reaping stray process <SpawnProcess(Dask Worker process (from Nanny), started daemon)>
+[2021-10-22 18:51:28,429] INFO reaping stray process <SpawnProcess(Dask Worker process (from Nanny), started daemon)>
+[2021-10-22 18:51:28,429] INFO reaping stray process <SpawnProcess(Dask Worker process (from Nanny), started daemon)>
+[2021-10-22 18:51:28,429] INFO reaping stray process <SpawnProcess(Dask Worker process (from Nanny), started daemon)>
+[2021-10-22 18:51:28,429] INFO reaping stray process <SpawnProcess(Dask Worker process (from Nanny), started daemon)>
+[2021-10-22 18:51:28,430] INFO reaping stray process <SpawnProcess(Dask Worker process (from Nanny), started daemon)>
+[2021-10-22 18:51:28,430] INFO reaping stray process <SpawnProcess(Dask Worker process (from Nanny), started daemon)>
+[2021-10-22 18:51:28,430] INFO reaping stray process <SpawnProcess(Dask Worker process (from Nanny), started daemon)>
+[2021-10-22 18:51:28,430] INFO reaping stray process <SpawnProcess(Dask Worker process (from Nanny), started daemon)>
+[2021-10-22 18:51:28,430] INFO reaping stray process <SpawnProcess(Dask Worker process (from Nanny), started daemon)>
+[2021-10-22 18:51:28,430] INFO reaping stray process <SpawnProcess(Dask Worker process (from Nanny), started daemon)>
+[2021-10-22 18:51:28,430] INFO reaping stray process <SpawnProcess(Dask Worker process (from Nanny), started daemon)>
+[2021-10-22 18:51:28,430] INFO reaping stray process <SpawnProcess(Dask Worker process (from Nanny), started daemon)>
+[2021-10-22 18:51:28,430] INFO reaping stray process <SpawnProcess(Dask Worker process (from Nanny), started daemon)>
+[2021-10-22 18:51:28,431] INFO reaping stray process <SpawnProcess(Dask Worker process (from Nanny), started daemon)>
+[2021-10-22 18:51:28,431] INFO reaping stray process <SpawnProcess(Dask Worker process (from Nanny), started daemon)>
+[2021-10-22 18:51:28,431] INFO reaping stray process <SpawnProcess(Dask Worker process (from Nanny), started daemon)>
+[2021-10-22 18:51:28,431] INFO reaping stray process <SpawnProcess(Dask Worker process (from Nanny), started daemon)>
+[2021-10-22 18:51:28,431] INFO reaping stray process <SpawnProcess(Dask Worker process (from Nanny), started daemon)>
+[2021-10-22 18:51:28,431] INFO reaping stray process <SpawnProcess(Dask Worker process (from Nanny), started daemon)>
+Error in atexit._run_exitfuncs:
+

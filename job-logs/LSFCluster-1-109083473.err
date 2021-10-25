@@ -1,0 +1,97 @@
+[2021-10-22 18:02:35,250] INFO Closing Nanny at 'tcp://10.36.60.19:30399'
+[2021-10-22 18:02:35,252] INFO Closing Nanny at 'tcp://10.36.60.19:32395'
+[2021-10-22 18:02:35,252] INFO Closing Nanny at 'tcp://10.36.60.19:18145'
+[2021-10-22 18:02:35,252] INFO Closing Nanny at 'tcp://10.36.60.19:38311'
+[2021-10-22 18:02:35,252] INFO Closing Nanny at 'tcp://10.36.60.19:20635'
+[2021-10-22 18:02:35,253] INFO Closing Nanny at 'tcp://10.36.60.19:27997'
+[2021-10-22 18:02:35,253] INFO Closing Nanny at 'tcp://10.36.60.19:35247'
+[2021-10-22 18:02:35,253] INFO Closing Nanny at 'tcp://10.36.60.19:39889'
+[2021-10-22 18:02:35,253] INFO Closing Nanny at 'tcp://10.36.60.19:28427'
+[2021-10-22 18:02:35,253] INFO Closing Nanny at 'tcp://10.36.60.19:37639'
+[2021-10-22 18:02:35,253] INFO Closing Nanny at 'tcp://10.36.60.19:28367'
+[2021-10-22 18:02:35,253] INFO Closing Nanny at 'tcp://10.36.60.19:31965'
+[2021-10-22 18:02:35,253] INFO Closing Nanny at 'tcp://10.36.60.19:34171'
+[2021-10-22 18:02:35,254] INFO Closing Nanny at 'tcp://10.36.60.19:22783'
+[2021-10-22 18:02:35,254] INFO Closing Nanny at 'tcp://10.36.60.19:34505'
+[2021-10-22 18:02:35,254] INFO Closing Nanny at 'tcp://10.36.60.19:39265'
+[2021-10-22 18:02:35,254] INFO Closing Nanny at 'tcp://10.36.60.19:20929'
+[2021-10-22 18:02:35,254] INFO Closing Nanny at 'tcp://10.36.60.19:16525'
+[2021-10-22 18:02:35,254] INFO Closing Nanny at 'tcp://10.36.60.19:21789'
+[2021-10-22 18:02:35,254] INFO Closing Nanny at 'tcp://10.36.60.19:31505'
+[2021-10-22 18:02:35,255] INFO Closing Nanny at 'tcp://10.36.60.19:26379'
+[2021-10-22 18:02:35,255] INFO Closing Nanny at 'tcp://10.36.60.19:22443'
+[2021-10-22 18:02:35,255] INFO Closing Nanny at 'tcp://10.36.60.19:19219'
+[2021-10-22 18:02:35,255] INFO Closing Nanny at 'tcp://10.36.60.19:27743'
+[2021-10-22 18:02:35,255] INFO Closing Nanny at 'tcp://10.36.60.19:38229'
+[2021-10-22 18:02:35,255] INFO Closing Nanny at 'tcp://10.36.60.19:15355'
+[2021-10-22 18:02:35,255] INFO Closing Nanny at 'tcp://10.36.60.19:28175'
+[2021-10-22 18:02:35,256] INFO Closing Nanny at 'tcp://10.36.60.19:26269'
+[2021-10-22 18:02:35,256] INFO Closing Nanny at 'tcp://10.36.60.19:34757'
+[2021-10-22 18:02:35,256] INFO Closing Nanny at 'tcp://10.36.60.19:21013'
+[2021-10-22 18:02:35,256] INFO Closing Nanny at 'tcp://10.36.60.19:29591'
+[2021-10-22 18:02:35,256] INFO Closing Nanny at 'tcp://10.36.60.19:22427'
+[2021-10-22 18:02:35,256] INFO Closing Nanny at 'tcp://10.36.60.19:19043'
+[2021-10-22 18:02:35,256] INFO Closing Nanny at 'tcp://10.36.60.19:18501'
+[2021-10-22 18:02:35,257] INFO Closing Nanny at 'tcp://10.36.60.19:25691'
+[2021-10-22 18:02:35,257] INFO Closing Nanny at 'tcp://10.36.60.19:33659'
+[2021-10-22 18:02:35,257] INFO Closing Nanny at 'tcp://10.36.60.19:31741'
+[2021-10-22 18:02:35,257] INFO Closing Nanny at 'tcp://10.36.60.19:19111'
+[2021-10-22 18:02:35,257] INFO Closing Nanny at 'tcp://10.36.60.19:18421'
+[2021-10-22 18:02:35,257] INFO Closing Nanny at 'tcp://10.36.60.19:27747'
+[2021-10-22 18:02:35,258] INFO End worker
+Traceback (most recent call last):
+  File "/groups/scicompsoft/home/ackermand/miniconda3/envs/multiresolution_mesh_creator/lib/python3.7/site-packages/distributed/comm/core.py", line 321, in connect
+    handshake = await asyncio.wait_for(comm.read(), time_left())
+  File "/groups/scicompsoft/home/ackermand/miniconda3/envs/multiresolution_mesh_creator/lib/python3.7/asyncio/tasks.py", line 449, in wait_for
+    raise futures.TimeoutError()
+concurrent.futures._base.TimeoutError
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/groups/scicompsoft/home/ackermand/miniconda3/envs/multiresolution_mesh_creator/lib/python3.7/site-packages/distributed/core.py", line 273, in _
+    await asyncio.wait_for(self.start(), timeout=timeout)
+  File "/groups/scicompsoft/home/ackermand/miniconda3/envs/multiresolution_mesh_creator/lib/python3.7/asyncio/tasks.py", line 442, in wait_for
+    return fut.result()
+  File "/groups/scicompsoft/home/ackermand/miniconda3/envs/multiresolution_mesh_creator/lib/python3.7/site-packages/distributed/nanny.py", line 311, in start
+    msg = await self.scheduler.register_nanny()
+  File "/groups/scicompsoft/home/ackermand/miniconda3/envs/multiresolution_mesh_creator/lib/python3.7/site-packages/distributed/core.py", line 863, in send_recv_from_rpc
+    comm = await self.pool.connect(self.addr)
+  File "/groups/scicompsoft/home/ackermand/miniconda3/envs/multiresolution_mesh_creator/lib/python3.7/site-packages/distributed/core.py", line 1051, in connect
+    raise exc
+  File "/groups/scicompsoft/home/ackermand/miniconda3/envs/multiresolution_mesh_creator/lib/python3.7/site-packages/distributed/core.py", line 1035, in connect
+    comm = await fut
+  File "/groups/scicompsoft/home/ackermand/miniconda3/envs/multiresolution_mesh_creator/lib/python3.7/site-packages/distributed/comm/core.py", line 328, in connect
+    ) from exc
+OSError: Timed out during handshake while connecting to tcp://10.36.60.11:31611 after 30 s
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/groups/scicompsoft/home/ackermand/miniconda3/envs/multiresolution_mesh_creator/lib/python3.7/runpy.py", line 193, in _run_module_as_main
+    "__main__", mod_spec)
+  File "/groups/scicompsoft/home/ackermand/miniconda3/envs/multiresolution_mesh_creator/lib/python3.7/runpy.py", line 85, in _run_code
+    exec(code, run_globals)
+  File "/groups/scicompsoft/home/ackermand/miniconda3/envs/multiresolution_mesh_creator/lib/python3.7/site-packages/distributed/cli/dask_worker.py", line 466, in <module>
+    go()
+  File "/groups/scicompsoft/home/ackermand/miniconda3/envs/multiresolution_mesh_creator/lib/python3.7/site-packages/distributed/cli/dask_worker.py", line 462, in go
+    main()
+  File "/groups/scicompsoft/home/ackermand/miniconda3/envs/multiresolution_mesh_creator/lib/python3.7/site-packages/click/core.py", line 1137, in __call__
+    return self.main(*args, **kwargs)
+  File "/groups/scicompsoft/home/ackermand/miniconda3/envs/multiresolution_mesh_creator/lib/python3.7/site-packages/click/core.py", line 1062, in main
+    rv = self.invoke(ctx)
+  File "/groups/scicompsoft/home/ackermand/miniconda3/envs/multiresolution_mesh_creator/lib/python3.7/site-packages/click/core.py", line 1404, in invoke
+    return ctx.invoke(self.callback, **ctx.params)
+  File "/groups/scicompsoft/home/ackermand/miniconda3/envs/multiresolution_mesh_creator/lib/python3.7/site-packages/click/core.py", line 763, in invoke
+    return __callback(*args, **kwargs)
+  File "/groups/scicompsoft/home/ackermand/miniconda3/envs/multiresolution_mesh_creator/lib/python3.7/site-packages/distributed/cli/dask_worker.py", line 448, in main
+    loop.run_sync(run)
+  File "/groups/scicompsoft/home/ackermand/miniconda3/envs/multiresolution_mesh_creator/lib/python3.7/site-packages/tornado/ioloop.py", line 530, in run_sync
+    return future_cell[0].result()
+  File "/groups/scicompsoft/home/ackermand/miniconda3/envs/multiresolution_mesh_creator/lib/python3.7/site-packages/distributed/cli/dask_worker.py", line 442, in run
+    await asyncio.gather(*nannies)
+  File "/groups/scicompsoft/home/ackermand/miniconda3/envs/multiresolution_mesh_creator/lib/python3.7/asyncio/tasks.py", line 630, in _wrap_awaitable
+    return (yield from awaitable.__await__())
+  File "/groups/scicompsoft/home/ackermand/miniconda3/envs/multiresolution_mesh_creator/lib/python3.7/site-packages/distributed/core.py", line 279, in _
+    type(self).__name__, timeout
+concurrent.futures._base.TimeoutError: Nanny failed to start in 60 seconds
