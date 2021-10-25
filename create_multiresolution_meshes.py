@@ -7,16 +7,13 @@ import time
 import os
 from os import listdir
 from os.path import isfile, join, splitext
-
-os.environ[
-    'DASK_CONFIG'] = "/groups/scicompsoft/home/ackermand/Programming/multiresolution-mesh-creator/configs/dask-config.yaml"
+import yaml
+from yaml.loader import SafeLoader
 import dask
 import pyfqmr
-
 from dask.distributed import Client, worker_client
 from utils import CompressedFragment
 from numba import jit
-import multiprocessing
 from datetime import datetime
 import argparse
 
@@ -406,11 +403,11 @@ def generate_neuroglancer_multires_mesh(output_path, num_workers, id, lods,
                     # seemed to cause this issue: https://github.com/dask/distributed/issues/4612
                     # so they are currently removed
                     results.append(
-                        generate_mesh_decomposition(
-                            vertices_yz,
-                            faces_yz, lod_0_box_size,
-                            start_fragment, end_fragment, x, x + x_stride,
-                            current_lod))
+                        generate_mesh_decomposition(vertices_yz, faces_yz,
+                                                    lod_0_box_size,
+                                                    start_fragment,
+                                                    end_fragment, x,
+                                                    x + x_stride, current_lod))
 
                     vertices, faces = my_slice_faces_plane(
                         vertices, faces, nyz, plane_origin_yz)
@@ -459,17 +456,30 @@ def generate_all_neuroglancer_multires_meshes(output_path, num_workers, ids,
     dask.compute(*results)
 
 
-def start_dask(num_workers):
-    if True:
-        from dask_jobqueue import LSFCluster
-        cluster = LSFCluster()
-        cluster.scale(jobs=2)
-        client = Client(cluster)
-        print("after")
+def start_dask(config_path, num_workers):
+
+    # Update dask
+    with open(f"{config_path}/dask-config.yaml") as f:
+        config = yaml.load(f, Loader=SafeLoader)
+        dask.config.update(dask.config.config, config)
+
+    cluster_type = next(iter(dask.config.config['jobqueue']))
+
+    if cluster_type == 'local-cluster':
+        client = Client(threads_per_worker=1, n_workers=num_workers)
     else:
-        client = Client(threads_per_worker=1,
-                        n_workers=num_workers,
-                        memory_limit='16GB')
+        if cluster_type == 'lsf':
+            from dask_jobqueue import LSFCluster
+            cluster = LSFCluster()
+        elif cluster_type == 'slurm':
+            from dask_jobqueue import SLURMCluster
+            cluster = SLURMCluster()
+        elif cluster_type == 'sge':
+            from dask_jobqueue import SGECluster
+            cluster = SGECluster
+        cluster.scale(num_workers)
+        client = Client(cluster)
+
     return client
 
 
@@ -478,70 +488,51 @@ def print_with_datetime(output):
     print(f"{now}: {output}")
 
 
+def read_run_config(config_path):
+    with open(f"{config_path}/run-config.yaml") as f:
+        config = yaml.load(f, Loader=SafeLoader)
+
+        if "skip_decimation" not in config:
+            config["skip_decimation"] = False
+        if "decimation_factor" not in config:
+            config["decimation_factor"] = 2
+        if "aggressiveness" not in config:
+            config["aggressiveness"] = 7
+
+        return config
+
+
 if __name__ == "__main__":
 
     # If more than 1 thread per worker, run into issues with decimation?
-
-    parser = argparse.ArgumentParser()
-    required_name = parser.add_argument_group('Required named arguments')
-    required_name.add_argument("-i",
-                               "--input_path",
-                               help="Path to lod 0 meshes",
-                               type=str,
-                               required=True)
-    required_name.add_argument("-o",
-                               "--output_path",
-                               help="Path to write out multires meshes",
-                               type=str,
-                               required=True)
-    required_name.add_argument("-n",
-                               "--num_lods",
-                               help="Number of levels of detail",
-                               type=int,
-                               required=True)
-    required_name.add_argument("-b",
-                               "--box_size",
-                               help="lod 0 box size",
-                               type=int,
-                               required=True)
+    parser = argparse.ArgumentParser(
+        description=
+        'Code to convert single-scale (or a set of multi-scale) meshes to the neuroglancer multi-resolution mesh format '
+    )
     parser.add_argument(
-        "-s",
-        "--skip_decimation",
-        help="(Optional) flag to skip mesh decimation if meshes exist",
-        action="store_true",
-        required=False)
-    parser.add_argument(
-        "-d",
-        "--decimation_factor",
-        default=2,
-        help=
-        "(Optional) factor by which to decimate faces at each lod, ie factor**lod; default is 2",
-        type=float,
-        required=False)
-    parser.add_argument(
-        "-a",
-        "--aggressiveness",
-        default=7,
-        help=
-        "(Optional) aggressiveness to be used for decimation; default is 7",
+        "config_path",
         type=int,
-        required=False)
+        defualt=1,
+        help="Path to directory containing run-config.yaml and dask-config.yaml"
+    )
     parser.add_argument(
-        "--num_workers",
-        default=multiprocessing.cpu_count(),
-        help="(Optional) number of workers for dask; default is cpu_count",
+        '--num-workers',
+        '-n',
         type=int,
-        required=False)
+        default=1,
+        help=
+        'Number of workers to launch (i.e. each worker is launched with a single bsub command)'
+    )
     args = parser.parse_args()
+    config = read_run_config(args.config_path)
 
-    # Gather args
-    input_path = args.input_path
-    output_path = args.output_path
-    num_lods = args.num_lods
-    lod_0_box_size = args.box_size
-    skip_decimation = args.skip_decimation
-    decimation_factor = args.decimation_factor
-    aggressiveness = args.aggressiveness
+    input_path = config.input_path
+    output_path = config.output_path
+    num_lods = config.num_lods
+    lod_0_box_size = config.box_size
+    skip_decimation = config.skip_decimation
+    decimation_factor = config.decimation_factor
+    aggressiveness = config.aggressiveness
     num_workers = args.num_workers
 
     lods = list(range(num_lods))
@@ -554,7 +545,7 @@ if __name__ == "__main__":
     t0 = time.time()
 
     print_with_datetime("Starting dask...")
-    client = start_dask(num_workers)
+    client = start_dask(args.config_path, num_workers)
     print_with_datetime(
         f"Dask started! Check {client.cluster.dashboard_link} for status")
 
