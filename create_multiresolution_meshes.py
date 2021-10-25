@@ -1,3 +1,4 @@
+from contextlib import ContextDecorator
 import trimesh
 from trimesh.intersections import slice_faces_plane
 import numpy as np
@@ -40,6 +41,26 @@ class Fragment:
         self.update_faces(new_faces)
         self.update_vertices(new_vertices)
         self.update_lod_0_fragment_pos(new_lod_0_fragment_pos)
+
+
+class Timing_Messager(ContextDecorator):
+    def __init__(self, base_message):
+        self._base_message = base_message
+
+    def __enter__(self):
+        print_with_datetime(f"{self._base_message}...")
+        return self
+
+    def __exit__(self, *exc):
+        exit_message_words = self._base_message.split()
+        if exit_message_words[0] == "Generating":
+            exit_message_words[0] = "Generated"
+        elif exit_message_words[0] == "Writing":
+            exit_message_words[0] = "Wrote"
+        exit_message = " ".join(exit_message_words)
+
+        print_with_datetime(f"{exit_message}!")
+        return False
 
 
 @jit(nopython=True)
@@ -551,23 +572,21 @@ if __name__ == "__main__":
 
     #  Mesh decimation
     if not skip_decimation:
-        print_with_datetime("Generating decimated meshes...")
-        generate_decimated_meshes(input_path, output_path, lods, mesh_ids,
-                                  mesh_ext, decimation_factor, aggressiveness)
-        print_with_datetime("Generated decimated meshes!")
+        with Timing_Messager("Generating decimated meshes"):
+            generate_decimated_meshes(input_path, output_path, lods, mesh_ids,
+                                      mesh_ext, decimation_factor,
+                                      aggressiveness)
 
     # Create multiresolution meshes
-    print_with_datetime("Generating multires meshes...")
-    generate_all_neuroglancer_multires_meshes(output_path, num_workers,
-                                              mesh_ids, lods, mesh_ext,
-                                              lod_0_box_size)
-    print_with_datetime("Generated multires meshes!")
+    with Timing_Messager("Generating multires meshes"):
+        generate_all_neuroglancer_multires_meshes(output_path, num_workers,
+                                                  mesh_ids, lods, mesh_ext,
+                                                  lod_0_box_size)
 
     # Writing out top-level files
-    print_with_datetime("Writing info and segment properties files...")
-    output_path = f"{output_path}/multires"
-    utils.write_segment_properties_file(output_path)
-    utils.write_info_file(output_path)
-    print_with_datetime("Wrote info and segment properties files!")
+    with Timing_Messager("Writing info and segment properties files"):
+        output_path = f"{output_path}/multires"
+        utils.write_segment_properties_file(output_path)
+        utils.write_info_file(output_path)
 
     print_with_datetime(f"Complete! Elapsed time: {time.time() - t0}")
