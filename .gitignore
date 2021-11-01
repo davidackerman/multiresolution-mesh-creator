@@ -12,3 +12,4 @@ dask-*
 job-logs/
 *.obj
 *.stl
+backup-configs/
