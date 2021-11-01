@@ -1,12 +1,12 @@
 required_settings:
         # Path to lod 0 meshes:
-        input_path: /groups/cosem/cosem/ackermand/meshesForWebsite/res1decimation0p05/jrc_hela-1/er_seg
+        input_path: /groups/scicompsoft/home/ackermand/Programming/multiresolution-mesh-creator/test_meshes
         # Path to write out multires meshes:
-        output_path: /groups/cosem/cosem/ackermand/meshesForWebsite/res1decimation0p05/jrc_hela-1/test_simpler_multires/temp
+        output_path: /groups/scicompsoft/home/ackermand/Programming/multiresolution-mesh-creator/test_meshes_output
         # Number of levels of detail:
         num_lods: 6
         # lod 0 box size:
-        box_size: 256
+        box_size: 4
 
 optional_decimation_settings:
         # Skip mesh decimation if meshes exist; default is false

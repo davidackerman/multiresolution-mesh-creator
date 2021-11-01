@@ -1,4 +1,4 @@
-required_settings:
+required_params:
         # Path to lod 0 meshes:
         input_path: /groups/cosem/cosem/ackermand/meshesForWebsite/res1decimation0p05/jrc_hela-1/er_seg
         # Path to write out multires meshes:
@@ -8,7 +8,7 @@ required_settings:
         # lod 0 box size:
         box_size: 256
 
-optional_decimation_settings:
+optional_decimation_params:
         # Skip mesh decimation if meshes exist; default is false
         skip_decimation: False
         # Factor by which to decimate faces at each lod, ie factor**lod; default is 2

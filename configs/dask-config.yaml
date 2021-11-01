@@ -1,20 +1,20 @@
 jobqueue:
-  lsf:
+  local:
     # Cluster slots are reserved in chunks.
     # This specifies the chunk size.
-    ncpus: 48
+    ncpus: 1
 
     # How many dask worker processed to run per chunk.
     # (Leave one thread empty for garbage collection.)
-    processes: 40
+    processes: 1
 
     # How many threads to use in each chunk.
     # (Use just one thread per process -- no internal thread pools.)
-    cores: 40
+    cores: 1
 
-    memory: 720GB   # 15 GB per slot
+    #memory: 8GB   # 15 GB per slot
     walltime: 01:00 # Set to 1:00 for access to the short queue
-    mem: 720000000000
+    #mem: 16000000000
     use-stdin: true
     log-directory: job-logs
     name: dask-worker

@@ -49,17 +49,13 @@ class Timing_Messager(ContextDecorator):
 
     def __enter__(self):
         print_with_datetime(f"{self._base_message}...")
+        self._start_time = time.time()
         return self
 
     def __exit__(self, *exc):
-        exit_message_words = self._base_message.split()
-        if exit_message_words[0] == "Generating":
-            exit_message_words[0] = "Generated"
-        elif exit_message_words[0] == "Writing":
-            exit_message_words[0] = "Wrote"
-        exit_message = " ".join(exit_message_words)
-
-        print_with_datetime(f"{exit_message}!")
+        print_with_datetime(
+            f"{self._base_message} completed in {time.time()-self._start_time}!"
+        )
         return False
 
 
@@ -424,7 +420,7 @@ def generate_neuroglancer_multires_mesh(output_path, num_workers, id, lods,
                     # seemed to cause this issue: https://github.com/dask/distributed/issues/4612
                     # so they are currently removed
                     results.append(
-                        generate_mesh_decomposition(vertices_yz, faces_yz,
+                        generate_mesh_decomposition(client.scatter(vertices_yz), client.scatter(faces_yz),
                                                     lod_0_box_size,
                                                     start_fragment,
                                                     end_fragment, x,
@@ -486,8 +482,9 @@ def start_dask(config_path, num_workers):
 
     cluster_type = next(iter(dask.config.config['jobqueue']))
 
-    if cluster_type == 'local-cluster':
-        client = Client(threads_per_worker=1, n_workers=num_workers)
+    if cluster_type == 'local':
+        from dask.distributed import LocalCluster
+        cluster = LocalCluster(n_workers=num_workers, threads_per_worker=1, memory_limit="16GB")
     else:
         if cluster_type == 'lsf':
             from dask_jobqueue import LSFCluster
@@ -499,7 +496,8 @@ def start_dask(config_path, num_workers):
             from dask_jobqueue import SGECluster
             cluster = SGECluster
         cluster.scale(num_workers)
-        client = Client(cluster)
+
+    client = Client(cluster)
 
     return client
 
@@ -512,28 +510,28 @@ def print_with_datetime(output):
 def read_run_config(config_path):
     with open(f"{config_path}/run-config.yaml") as f:
         config = yaml.load(f, Loader=SafeLoader)
+        required_settings = config['required_settings']
+        optional_decimation_settings = config.get(
+            "optional_decimation_settings", {})
 
-        if "skip_decimation" not in config:
-            config["skip_decimation"] = False
-        if "decimation_factor" not in config:
-            config["decimation_factor"] = 2
-        if "aggressiveness" not in config:
-            config["aggressiveness"] = 7
+        if "skip_decimation" not in optional_decimation_settings:
+            optional_decimation_settings["skip_decimation"] = False
+        if "decimation_factor" not in optional_decimation_settings:
+            optional_decimation_settings["decimation_factor"] = 2
+        if "aggressiveness" not in optional_decimation_settings:
+            optional_decimation_settings["aggressiveness"] = 7
 
-        return config
+        return required_settings, optional_decimation_settings
 
 
-if __name__ == "__main__":
-
-    # If more than 1 thread per worker, run into issues with decimation?
+def parser_params():
     parser = argparse.ArgumentParser(
         description=
         'Code to convert single-scale (or a set of multi-scale) meshes to the neuroglancer multi-resolution mesh format '
     )
     parser.add_argument(
         "config_path",
-        type=int,
-        defualt=1,
+        type=str,
         help="Path to directory containing run-config.yaml and dask-config.yaml"
     )
     parser.add_argument(
@@ -544,17 +542,27 @@ if __name__ == "__main__":
         help=
         'Number of workers to launch (i.e. each worker is launched with a single bsub command)'
     )
-    args = parser.parse_args()
-    config = read_run_config(args.config_path)
 
-    input_path = config.input_path
-    output_path = config.output_path
-    num_lods = config.num_lods
-    lod_0_box_size = config.box_size
-    skip_decimation = config.skip_decimation
-    decimation_factor = config.decimation_factor
-    aggressiveness = config.aggressiveness
+    return parser.parse_args()
+
+
+if __name__ == "__main__":
+
+    # If more than 1 thread per worker, run into issues with decimation?
+    args = parser_params()
     num_workers = args.num_workers
+
+    required_settings, optional_decimation_settings = read_run_config(
+        args.config_path)
+
+    input_path = required_settings['input_path']
+    output_path = required_settings['output_path']
+    num_lods = required_settings['num_lods']
+    lod_0_box_size = required_settings['box_size']
+
+    skip_decimation = optional_decimation_settings['skip_decimation']
+    decimation_factor = optional_decimation_settings['decimation_factor']
+    aggressiveness = optional_decimation_settings['aggressiveness']
 
     lods = list(range(num_lods))
     mesh_files = [
@@ -565,12 +573,12 @@ if __name__ == "__main__":
 
     t0 = time.time()
 
-    print_with_datetime("Starting dask...")
-    client = start_dask(args.config_path, num_workers)
-    print_with_datetime(
-        f"Dask started! Check {client.cluster.dashboard_link} for status")
+    # Start dask
+    with Timing_Messager("Starting dask cluster"):
+        client = start_dask(args.config_path, num_workers)
+    print_with_datetime(f"Check {client.cluster.dashboard_link} for status")
 
-    #  Mesh decimation
+    # Mesh decimation
     if not skip_decimation:
         with Timing_Messager("Generating decimated meshes"):
             generate_decimated_meshes(input_path, output_path, lods, mesh_ids,
