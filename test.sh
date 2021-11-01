@@ -1,1 +1,1 @@
-python create_multiresolution_meshes.py -i /groups/cosem/cosem/ackermand/meshesForWebsite/res1decimation0p05/jrc_hela-1/er_seg -o /groups/cosem/cosem/ackermand/meshesForWebsite/res1decimation0p05/jrc_hela-1/test_simpler_multires/test -a 10 -d 2 -n 6 -b 256
+python create_multiresolution_meshes.py lsf-config -n 2

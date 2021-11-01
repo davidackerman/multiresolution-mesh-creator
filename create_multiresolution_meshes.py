@@ -17,6 +17,10 @@ from utils import CompressedFragment
 from numba import jit
 from datetime import datetime
 import argparse
+import getpass
+import tempfile
+import shutil
+import sys
 
 
 class Fragment:
@@ -420,11 +424,11 @@ def generate_neuroglancer_multires_mesh(output_path, num_workers, id, lods,
                     # seemed to cause this issue: https://github.com/dask/distributed/issues/4612
                     # so they are currently removed
                     results.append(
-                        generate_mesh_decomposition(client.scatter(vertices_yz), client.scatter(faces_yz),
-                                                    lod_0_box_size,
-                                                    start_fragment,
-                                                    end_fragment, x,
-                                                    x + x_stride, current_lod))
+                        generate_mesh_decomposition(
+                            client.scatter(vertices_yz),
+                            client.scatter(faces_yz), lod_0_box_size,
+                            start_fragment, end_fragment, x, x + x_stride,
+                            current_lod))
 
                     vertices, faces = my_slice_faces_plane(
                         vertices, faces, nyz, plane_origin_yz)
@@ -443,8 +447,8 @@ def generate_neuroglancer_multires_mesh(output_path, num_workers, id, lods,
                 lods[:idx + 1],
                 np.asarray([lod_0_box_size, lod_0_box_size, lod_0_box_size]))
 
-    print(
-        f"Completed creation of multiresolution neuroglancer mesh for mesh {id}!"
+    sys.stdout.write(
+        f"Completed creation of multiresolution neuroglancer mesh for mesh {id}!\n"
     )
 
 
@@ -473,18 +477,52 @@ def generate_all_neuroglancer_multires_meshes(output_path, num_workers, ids,
     dask.compute(*results)
 
 
-def start_dask(config_path, num_workers):
+def _set_local_directory(cluster_type):
+    # from https://github.com/janelia-flyem/flyemflows/blob/6ae20cb58fd55e74b47a43efdab7e09908a346ba/flyemflows/util/dask_util.py
+    # This specifies where dask workers will dump cached data
+    local_dir = dask.config.get(f"jobqueue.{cluster_type}.local-directory",
+                                None)
+    if local_dir:
+        return
+
+    user = getpass.getuser()
+    local_dir = None
+    for d in [f"/scratch/{user}", f"/tmp/{user}"]:
+        try:
+            os.makedirs(d, exist_ok=True)
+        except OSError:
+            continue
+        else:
+            local_dir = d
+            dask.config.set(
+                {f"jobqueue.{cluster_type}.local-directory": local_dir})
+
+            # Set tempdir, too.
+            tempfile.tempdir = local_dir
+
+            # Forked processes will use this for tempfile.tempdir
+            os.environ['TMPDIR'] = local_dir
+            break
+
+    if local_dir is None:
+        raise RuntimeError(
+            "Could not create a local-directory in any of the standard places."
+        )
+
+
+def start_dask(num_workers):
 
     # Update dask
-    with open(f"{config_path}/dask-config.yaml") as f:
+    with open(f"dask-config.yaml") as f:
         config = yaml.load(f, Loader=SafeLoader)
         dask.config.update(dask.config.config, config)
 
     cluster_type = next(iter(dask.config.config['jobqueue']))
+    _set_local_directory(cluster_type)
 
     if cluster_type == 'local':
         from dask.distributed import LocalCluster
-        cluster = LocalCluster(n_workers=num_workers, threads_per_worker=1, memory_limit="16GB")
+        cluster = LocalCluster(n_workers=num_workers, threads_per_worker=1)
     else:
         if cluster_type == 'lsf':
             from dask_jobqueue import LSFCluster
@@ -494,7 +532,7 @@ def start_dask(config_path, num_workers):
             cluster = SLURMCluster()
         elif cluster_type == 'sge':
             from dask_jobqueue import SGECluster
-            cluster = SGECluster
+            cluster = SGECluster()
         cluster.scale(num_workers)
 
     client = Client(cluster)
@@ -504,7 +542,7 @@ def start_dask(config_path, num_workers):
 
 def print_with_datetime(output):
     now = datetime.now().strftime("%Y/%m/%d %H:%M:%S")
-    print(f"{now}: {output}")
+    sys.stdout.write(f"{now}: {output}\n")
 
 
 def read_run_config(config_path):
@@ -546,12 +584,25 @@ def parser_params():
     return parser.parse_args()
 
 
+def setup_execution_directory(config_path):
+    # Create execution dir (copy of template dir) and make it the CWD
+    # from flyemflows: https://github.com/janelia-flyem/flyemflows/blob/03cfd79ccc1dcd4903007b36759f4b677ca5c67e/flyemflows/bin/launchflow.py
+    timestamp = f'{datetime.now():%Y%m%d.%H%M%S}'
+    execution_dir = f'{config_path}-{timestamp}'
+    execution_dir = os.path.abspath(execution_dir)
+    shutil.copytree(config_path, execution_dir, symlinks=True)
+    os.chmod(f'{execution_dir}/run-config.yaml', 0o444)  # read-only
+    print_with_datetime(f"Setup working directory as {execution_dir}.")
+
+    return execution_dir
+
+
 if __name__ == "__main__":
+    submission_directory = os.getcwd()
 
     # If more than 1 thread per worker, run into issues with decimation?
     args = parser_params()
     num_workers = args.num_workers
-
     required_settings, optional_decimation_settings = read_run_config(
         args.config_path)
 
@@ -564,37 +615,44 @@ if __name__ == "__main__":
     decimation_factor = optional_decimation_settings['decimation_factor']
     aggressiveness = optional_decimation_settings['aggressiveness']
 
-    lods = list(range(num_lods))
-    mesh_files = [
-        f for f in listdir(input_path) if isfile(join(input_path, f))
-    ]
-    mesh_ids = [splitext(mesh_file)[0] for mesh_file in mesh_files]
-    mesh_ext = splitext(mesh_files[0])[1]
+    execution_directory = setup_execution_directory(args.config_path)
+    try:
+        os.chdir(execution_directory)
 
-    t0 = time.time()
+        lods = list(range(num_lods))
+        mesh_files = [
+            f for f in listdir(input_path) if isfile(join(input_path, f))
+        ]
+        mesh_ids = [splitext(mesh_file)[0] for mesh_file in mesh_files]
+        mesh_ext = splitext(mesh_files[0])[1]
 
-    # Start dask
-    with Timing_Messager("Starting dask cluster"):
-        client = start_dask(args.config_path, num_workers)
-    print_with_datetime(f"Check {client.cluster.dashboard_link} for status")
+        t0 = time.time()
 
-    # Mesh decimation
-    if not skip_decimation:
-        with Timing_Messager("Generating decimated meshes"):
-            generate_decimated_meshes(input_path, output_path, lods, mesh_ids,
-                                      mesh_ext, decimation_factor,
-                                      aggressiveness)
+        # Start dask
+        with Timing_Messager("Starting dask cluster"):
+            client = start_dask(num_workers)
+        print_with_datetime(
+            f"Check {client.cluster.dashboard_link} for status")
 
-    # Create multiresolution meshes
-    with Timing_Messager("Generating multires meshes"):
-        generate_all_neuroglancer_multires_meshes(output_path, num_workers,
-                                                  mesh_ids, lods, mesh_ext,
-                                                  lod_0_box_size)
+        # Mesh decimation
+        if not skip_decimation:
+            with Timing_Messager("Generating decimated meshes"):
+                generate_decimated_meshes(input_path, output_path, lods,
+                                          mesh_ids, mesh_ext,
+                                          decimation_factor, aggressiveness)
 
-    # Writing out top-level files
-    with Timing_Messager("Writing info and segment properties files"):
-        output_path = f"{output_path}/multires"
-        utils.write_segment_properties_file(output_path)
-        utils.write_info_file(output_path)
+        # Create multiresolution meshes
+        with Timing_Messager("Generating multires meshes"):
+            generate_all_neuroglancer_multires_meshes(output_path, num_workers,
+                                                      mesh_ids, lods, mesh_ext,
+                                                      lod_0_box_size)
 
-    print_with_datetime(f"Complete! Elapsed time: {time.time() - t0}")
+        # Writing out top-level files
+        with Timing_Messager("Writing info and segment properties files"):
+            output_path = f"{output_path}/multires"
+            utils.write_segment_properties_file(output_path)
+            utils.write_info_file(output_path)
+
+        print_with_datetime(f"Complete! Elapsed time: {time.time() - t0}")
+    finally:
+        os.chdir(submission_directory)

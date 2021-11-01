@@ -13,3 +13,5 @@ job-logs/
 *.obj
 *.stl
 backup-configs/
+my-configs/
+*-2021*/
