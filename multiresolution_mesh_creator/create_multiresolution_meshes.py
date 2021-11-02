@@ -3,7 +3,6 @@ import trimesh
 from trimesh.intersections import slice_faces_plane
 import numpy as np
 from dvidutils import encode_faces_to_custom_drc_bytes
-import utils
 import time
 import os
 from os import listdir
@@ -13,7 +12,7 @@ from yaml.loader import SafeLoader
 import dask
 import pyfqmr
 from dask.distributed import Client, worker_client
-from utils import CompressedFragment
+from multiresolution_mesh_creator.utils import CompressedFragment
 from numba import jit
 from datetime import datetime
 import argparse
@@ -21,6 +20,7 @@ import getpass
 import tempfile
 import shutil
 import sys
+import multiresolution_mesh_creator.utils as utils
 
 
 class Fragment:
@@ -565,7 +565,7 @@ def read_run_config(config_path):
 def parser_params():
     parser = argparse.ArgumentParser(
         description=
-        'Code to convert single-scale (or a set of multi-scale) meshes to the neuroglancer multi-resolution mesh format '
+        'Code to convert single-scale (or a set of multi-scale) meshes to the neuroglancer multi-resolution mesh format'
     )
     parser.add_argument(
         "config_path",
@@ -597,7 +597,7 @@ def setup_execution_directory(config_path):
     return execution_dir
 
 
-if __name__ == "__main__":
+def main():
     submission_directory = os.getcwd()
 
     # If more than 1 thread per worker, run into issues with decimation?
@@ -656,3 +656,7 @@ if __name__ == "__main__":
         print_with_datetime(f"Complete! Elapsed time: {time.time() - t0}")
     finally:
         os.chdir(submission_directory)
+
+
+if __name__ == "__main__":
+    main()

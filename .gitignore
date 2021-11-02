@@ -15,3 +15,5 @@ job-logs/
 backup-configs/
 my-configs/
 *-2021*/
+*.egg-info/
+dist/
