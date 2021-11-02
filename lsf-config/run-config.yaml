@@ -1,6 +1,6 @@
 required_settings:
-        input_path: ../test_meshes           # Path to lod 0 meshes:
-        output_path: ../test_meshes_output   # Path to write out multires meshes:
+        input_path: /groups/cosem/cosem/ackermand/meshesForWebsite/res1decimation0p05/jrc_hela-1/er_seg           # Path to lod 0 meshes:
+        output_path: /groups/cosem/cosem/ackermand/meshesForWebsite/res1decimation0p05/jrc_hela-1/test_simpler_multires/temp   # Path to write out multires meshes:
         num_lods: 6                         # Number of levels of detail:
         box_size: 256                       # lod 0 box size:
 

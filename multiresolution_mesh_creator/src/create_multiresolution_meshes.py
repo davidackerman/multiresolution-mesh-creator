@@ -1,4 +1,3 @@
-from contextlib import ContextDecorator
 import trimesh
 from trimesh.intersections import slice_faces_plane
 import numpy as np
@@ -12,15 +11,18 @@ from yaml.loader import SafeLoader
 import dask
 import pyfqmr
 from dask.distributed import Client, worker_client
-from multiresolution_mesh_creator.utils import CompressedFragment
+from multiresolution_mesh_creator.util.mesh import CompressedFragment
 from numba import jit
-from datetime import datetime
 import argparse
 import getpass
 import tempfile
 import shutil
-import sys
-import multiresolution_mesh_creator.utils as utils
+import multiresolution_mesh_creator.util.mesh as mesh_utils
+from multiresolution_mesh_creator.util.logging import tee_streams, Timing_Messager, print_with_datetime
+from datetime import datetime
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class Fragment:
@@ -45,22 +47,6 @@ class Fragment:
         self.update_faces(new_faces)
         self.update_vertices(new_vertices)
         self.update_lod_0_fragment_pos(new_lod_0_fragment_pos)
-
-
-class Timing_Messager(ContextDecorator):
-    def __init__(self, base_message):
-        self._base_message = base_message
-
-    def __enter__(self):
-        print_with_datetime(f"{self._base_message}...")
-        self._start_time = time.time()
-        return self
-
-    def __exit__(self, *exc):
-        print_with_datetime(
-            f"{self._base_message} completed in {time.time()-self._start_time}!"
-        )
-        return False
 
 
 @jit(nopython=True)
@@ -315,7 +301,7 @@ def pyfqmr_decimate(input_path, output_path, id, lod, ext, decimation_factor,
         aggressiveness [`int`]: Aggressiveness for decimation
     """
 
-    vertices, faces = utils.mesh_loader(f"{input_path}/{id}{ext}")
+    vertices, faces = mesh_utils.mesh_loader(f"{input_path}/{id}{ext}")
     desired_faces = max(len(faces) // (decimation_factor**lod), 4)
     mesh_simplifier = pyfqmr.Simplify()
     mesh_simplifier.setMesh(vertices, faces)
@@ -397,11 +383,11 @@ def generate_neuroglancer_multires_mesh(output_path, num_workers, id, lods,
 
         for idx, current_lod in enumerate(lods):
             if current_lod == 0:
-                vertices, faces = utils.mesh_loader(
+                vertices, faces = mesh_utils.mesh_loader(
                     f"{output_path}/mesh_lods/s{current_lod}/{id}{original_ext}"
                 )
             else:
-                vertices, faces = utils.mesh_loader(
+                vertices, faces = mesh_utils.mesh_loader(
                     f"{output_path}/mesh_lods/s{current_lod}/{id}.stl")
 
             current_box_size = lod_0_box_size * 2**current_lod
@@ -424,11 +410,11 @@ def generate_neuroglancer_multires_mesh(output_path, num_workers, id, lods,
                     # seemed to cause this issue: https://github.com/dask/distributed/issues/4612
                     # so they are currently removed
                     results.append(
-                        generate_mesh_decomposition(
-                            client.scatter(vertices_yz),
-                            client.scatter(faces_yz), lod_0_box_size,
-                            start_fragment, end_fragment, x, x + x_stride,
-                            current_lod))
+                        generate_mesh_decomposition(vertices_yz, faces_yz,
+                                                    lod_0_box_size,
+                                                    start_fragment,
+                                                    end_fragment, x,
+                                                    x + x_stride, current_lod))
 
                     vertices, faces = my_slice_faces_plane(
                         vertices, faces, nyz, plane_origin_yz)
@@ -442,14 +428,14 @@ def generate_neuroglancer_multires_mesh(output_path, num_workers, id, lods,
 
             results = []
             dask_results = []
-            utils.write_mesh_files(
+            mesh_utils.write_mesh_files(
                 f"{output_path}/multires", f"{id}", fragments, current_lod,
                 lods[:idx + 1],
                 np.asarray([lod_0_box_size, lod_0_box_size, lod_0_box_size]))
 
-    sys.stdout.write(
-        f"Completed creation of multiresolution neuroglancer mesh for mesh {id}!\n"
-    )
+    print_with_datetime(
+        f"Completed creation of multiresolution neuroglancer mesh for mesh {id}!",
+        logger)
 
 
 def generate_all_neuroglancer_multires_meshes(output_path, num_workers, ids,
@@ -513,7 +499,7 @@ def _set_local_directory(cluster_type):
 def start_dask(num_workers):
 
     # Update dask
-    with open(f"dask-config.yaml") as f:
+    with open("dask-config.yaml") as f:
         config = yaml.load(f, Loader=SafeLoader)
         dask.config.update(dask.config.config, config)
 
@@ -536,13 +522,13 @@ def start_dask(num_workers):
         cluster.scale(num_workers)
 
     client = Client(cluster)
+    # while (client.status == "running"
+    #        and len(cluster.scheduler.workers) < num_workers):
+    #     print(
+    #         f"Waiting for {num_workers - len(cluster.scheduler.workers)} workers..."
+    #     )
 
     return client
-
-
-def print_with_datetime(output):
-    now = datetime.now().strftime("%Y/%m/%d %H:%M:%S")
-    sys.stdout.write(f"{now}: {output}\n")
 
 
 def read_run_config(config_path):
@@ -592,7 +578,7 @@ def setup_execution_directory(config_path):
     execution_dir = os.path.abspath(execution_dir)
     shutil.copytree(config_path, execution_dir, symlinks=True)
     os.chmod(f'{execution_dir}/run-config.yaml', 0o444)  # read-only
-    print_with_datetime(f"Setup working directory as {execution_dir}.")
+    print_with_datetime(f"Setup working directory as {execution_dir}.", logger)
 
     return execution_dir
 
@@ -616,46 +602,52 @@ def main():
     aggressiveness = optional_decimation_settings['aggressiveness']
 
     execution_directory = setup_execution_directory(args.config_path)
-    try:
-        os.chdir(execution_directory)
+    logpath = f'{execution_directory}/output.log'
 
-        lods = list(range(num_lods))
-        mesh_files = [
-            f for f in listdir(input_path) if isfile(join(input_path, f))
-        ]
-        mesh_ids = [splitext(mesh_file)[0] for mesh_file in mesh_files]
-        mesh_ext = splitext(mesh_files[0])[1]
+    with tee_streams(logpath):
 
-        t0 = time.time()
+        try:
+            os.chdir(execution_directory)
 
-        # Start dask
-        with Timing_Messager("Starting dask cluster"):
-            client = start_dask(num_workers)
-        print_with_datetime(
-            f"Check {client.cluster.dashboard_link} for status")
+            lods = list(range(num_lods))
+            mesh_files = [
+                f for f in listdir(input_path) if isfile(join(input_path, f))
+            ]
+            mesh_ids = [splitext(mesh_file)[0] for mesh_file in mesh_files]
+            mesh_ext = splitext(mesh_files[0])[1]
 
-        # Mesh decimation
-        if not skip_decimation:
-            with Timing_Messager("Generating decimated meshes"):
-                generate_decimated_meshes(input_path, output_path, lods,
-                                          mesh_ids, mesh_ext,
-                                          decimation_factor, aggressiveness)
+            t0 = time.time()
 
-        # Create multiresolution meshes
-        with Timing_Messager("Generating multires meshes"):
-            generate_all_neuroglancer_multires_meshes(output_path, num_workers,
-                                                      mesh_ids, lods, mesh_ext,
-                                                      lod_0_box_size)
+            # Start dask
+            with Timing_Messager("Starting dask cluster", logger):
+                client = start_dask(num_workers)
+            print_with_datetime(
+                f"Check {client.cluster.dashboard_link} for status", logger)
+            # Mesh decimation
+            if not skip_decimation:
+                with Timing_Messager("Generating decimated meshes", logger):
+                    generate_decimated_meshes(input_path, output_path, lods,
+                                              mesh_ids, mesh_ext,
+                                              decimation_factor,
+                                              aggressiveness)
 
-        # Writing out top-level files
-        with Timing_Messager("Writing info and segment properties files"):
-            output_path = f"{output_path}/multires"
-            utils.write_segment_properties_file(output_path)
-            utils.write_info_file(output_path)
+            # Create multiresolution meshes
+            with Timing_Messager("Generating multires meshes", logger):
+                generate_all_neuroglancer_multires_meshes(
+                    output_path, num_workers, mesh_ids, lods, mesh_ext,
+                    lod_0_box_size)
 
-        print_with_datetime(f"Complete! Elapsed time: {time.time() - t0}")
-    finally:
-        os.chdir(submission_directory)
+            # Writing out top-level files
+            with Timing_Messager("Writing info and segment properties files",
+                                 logger):
+                output_path = f"{output_path}/multires"
+                mesh_utils.write_segment_properties_file(output_path)
+                mesh_utils.write_info_file(output_path)
+
+            print_with_datetime(f"Complete! Elapsed time: {time.time() - t0}",
+                                logger)
+        finally:
+            os.chdir(submission_directory)
 
 
 if __name__ == "__main__":
