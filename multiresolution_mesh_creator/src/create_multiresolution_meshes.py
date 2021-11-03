@@ -11,7 +11,6 @@ from yaml.loader import SafeLoader
 import dask
 import pyfqmr
 from dask.distributed import Client, worker_client
-from numba import jit
 import argparse
 import getpass
 import tempfile
@@ -47,82 +46,6 @@ class Fragment:
         self.update_faces(new_faces)
         self.update_vertices(new_vertices)
         self.update_lod_0_fragment_pos(new_lod_0_fragment_pos)
-
-
-@jit(nopython=True)
-def get_faces_within_slice(vertices, faces, triangles, max_edge_length,
-                           plane_normal, plane_origin):
-    """Numba optimized function to get mesh faces to the positive normal side
-    of plane_origin with a padding of max_edge_length. A face is defined to be
-    within this region if at least one of its vertices is within the region.
-
-    Args:
-        vertices: Mesh vertices
-        faces: Mesh faces
-        triangle: Array of mesh face vertices
-        max_edge_length: Maximum edge length for mesh
-        plane_normal: Normal of plane
-        plane_origin: Origin of plane
-
-    Returns:
-        vertices, faces: Vertices and faces within region
-    """
-
-    axis = np.where(plane_normal != 0)[0][0]
-    plane_origin = plane_origin[axis]
-
-    if np.any(plane_normal < 0):
-        plane_origin = plane_origin + max_edge_length
-        faces_in_range = np.where((triangles[:, 0 + axis] <= plane_origin)
-                                  | (triangles[:, 3 + axis] <= plane_origin)
-                                  | (triangles[:, 6 + axis] <= plane_origin))
-    else:
-        plane_origin = plane_origin - max_edge_length
-        faces_in_range = np.where((triangles[:, 0 + axis] >= plane_origin)
-                                  | (triangles[:, 3 + axis] >= plane_origin)
-                                  | (triangles[:, 6 + axis] >= plane_origin))
-
-    faces_in_range = faces_in_range[0]
-    faces = faces[faces_in_range].reshape(-1)
-
-    vertices_unq = np.unique(faces)  # Numba doesn't support return_inverse
-    vertices_renumbering_dict = {}
-    for idx, vertex_unq_idx in enumerate(vertices_unq):
-        vertices_renumbering_dict[vertex_unq_idx] = idx
-
-    faces = np.array([vertices_renumbering_dict[v_idx] for v_idx in faces])
-    vertices = vertices[vertices_unq]
-
-    faces = faces.reshape(-1, 3)
-    return vertices, faces
-
-
-def my_fast_slice_faces_plane(vertices, faces, triangles, max_edge_length,
-                              plane_normal, plane_origin):
-    """`slice_faces_plane` but with numba optimized prestep to get faces
-    within slice. Ideally would speed up code.
-
-    Args:
-        vertices: Mesh vertices
-        faces: Mesh faces
-        triangles: Array of mesh face vertices
-        max_edge_length: Maximum edge length for mesh
-        plane_normal: Normal of plane
-        plane_origin: Origin of plane
-
-    Returns:
-        v, f: Vertices and faces
-    """
-
-    if len(vertices) > 0:
-        vertices, faces = get_faces_within_slice(vertices, faces, triangles,
-                                                 max_edge_length, plane_normal,
-                                                 plane_origin)
-
-        vertices, faces = my_slice_faces_plane(vertices, faces, plane_normal,
-                                               plane_origin)
-
-    return vertices, faces
 
 
 def my_slice_faces_plane(vertices, faces, plane_normal, plane_origin):
