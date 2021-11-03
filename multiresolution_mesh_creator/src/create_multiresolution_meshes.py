@@ -110,7 +110,8 @@ def update_fragment_dict(dictionary, fragment_pos, vertices, faces,
 
 @dask.delayed
 def generate_mesh_decomposition(vertices, faces, lod_0_box_size,
-                                start_fragment, end_fragment, current_lod):
+                                start_fragment, end_fragment, current_lod,
+                                num_chunks):
     """Dask delayed function to decompose a mesh, provided as vertices and
     faces, into fragments of size lod_0_box_size * 2**current_lod. Each
     fragment is also subdivided by 2x2x2. This is performed over a limited
@@ -149,15 +150,16 @@ def generate_mesh_decomposition(vertices, faces, lod_0_box_size,
     # Set up slab for current dask task
     n = np.eye(3)
     for dimension in range(3):
-        n_d = n[dimension, :]
-        plane_origin = n_d * end_fragment[dimension] * sub_box_size
-        vertices, faces = my_slice_faces_plane(vertices, faces, -n_d,
-                                               plane_origin)
-        if len(vertices) == 0:
-            return None
-        plane_origin = n_d * start_fragment[dimension] * sub_box_size
-        vertices, faces = my_slice_faces_plane(vertices, faces, n_d,
-                                               plane_origin)
+        if num_chunks[dimension] > 1:
+            n_d = n[dimension, :]
+            plane_origin = n_d * end_fragment[dimension] * sub_box_size
+            vertices, faces = my_slice_faces_plane(vertices, faces, -n_d,
+                                                   plane_origin)
+            if len(vertices) == 0:
+                return None
+            plane_origin = n_d * start_fragment[dimension] * sub_box_size
+            vertices, faces = my_slice_faces_plane(vertices, faces, n_d,
+                                                   plane_origin)
 
     if len(vertices) == 0:
         return None
@@ -333,23 +335,25 @@ def generate_neuroglancer_multires_mesh(output_path, num_workers, id, lods,
             end_fragment = (vertices.max(axis=0) // current_box_size +
                             1).astype(int)
 
+            # if it can all fit in one dimension, do that
+            # if its been filled up and can add to next dimension, do that
+            # etc
             max_number_of_chunks = (end_fragment - start_fragment)
+            dimensions_sorted = np.argsort(-max_number_of_chunks)
             num_chunks = np.array([1, 1, 1])
-            sum_prev = 0
-            while np.prod(num_chunks) < num_workers and np.sum(
-                    num_chunks) != sum_prev:
-                sum_prev = np.sum(num_chunks)
-                for i in range(3):
-                    if num_chunks[i] < max_number_of_chunks[i]:
-                        num_chunks[i] += 1
-                        if np.prod(num_chunks) >= num_workers:
-                            num_chunks[i] -= 1
+            for _ in range(num_workers + 1):
+                for d in dimensions_sorted:
+                    if num_chunks[d] < max_number_of_chunks[d]:
+                        num_chunks[d] += 1
+                        if np.prod(num_chunks) > num_workers:
+                            num_chunks[d] -= 1
+                        break
 
             stride = np.ceil(1.0 * (end_fragment - start_fragment) /
                              num_chunks).astype(np.int)
 
-            vertices_scattered = client.scatter(vertices)
-            faces_scattered = client.scatter(faces)
+            #vertices_scattered = client.scatter(vertices)
+            #faces_scattered = client.scatter(faces)
             for x in range(start_fragment[0], end_fragment[0] + 1, stride[0]):
                 for y in range(start_fragment[1], end_fragment[1] + 1,
                                stride[1]):
@@ -359,9 +363,9 @@ def generate_neuroglancer_multires_mesh(output_path, num_workers, id, lods,
                         current_end_fragment = current_start_fragment + stride
                         results.append(
                             generate_mesh_decomposition(
-                                vertices_scattered, faces_scattered,
-                                lod_0_box_size, current_start_fragment,
-                                current_end_fragment, current_lod))
+                                vertices, faces, lod_0_box_size,
+                                current_start_fragment, current_end_fragment,
+                                current_lod, num_chunks))
 
             dask_results = dask.compute(*results)
 
