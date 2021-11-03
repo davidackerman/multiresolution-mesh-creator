@@ -110,8 +110,7 @@ def update_fragment_dict(dictionary, fragment_pos, vertices, faces,
 
 @dask.delayed
 def generate_mesh_decomposition(vertices, faces, lod_0_box_size,
-                                start_fragment, end_fragment, x_start, x_end,
-                                current_lod):
+                                start_fragment, end_fragment, current_lod):
     """Dask delayed function to decompose a mesh, provided as vertices and
     faces, into fragments of size lod_0_box_size * 2**current_lod. Each
     fragment is also subdivided by 2x2x2. This is performed over a limited
@@ -141,8 +140,6 @@ def generate_mesh_decomposition(vertices, faces, lod_0_box_size,
         # so multiply coordinates by 2
         start_fragment *= 2
         end_fragment *= 2
-        x_start *= 2
-        x_end *= 2
 
         # 2x2x2 subdividing box size
         sub_box_size = lod_0_box_size * 2**(current_lod - 1)
@@ -150,70 +147,73 @@ def generate_mesh_decomposition(vertices, faces, lod_0_box_size,
         sub_box_size = lod_0_box_size
 
     # Set up slab for current dask task
-    plane_origin_yz = nyz * x_end * sub_box_size
-    vertices, faces = my_slice_faces_plane(vertices, faces, -nyz,
-                                           plane_origin_yz)
+    n = np.eye(3)
+    for dimension in range(3):
+        n_d = n[dimension, :]
+        plane_origin = n_d * end_fragment[dimension] * sub_box_size
+        vertices, faces = my_slice_faces_plane(vertices, faces, -n_d,
+                                               plane_origin)
+        if len(vertices) == 0:
+            return None
+        plane_origin = n_d * start_fragment[dimension] * sub_box_size
+        vertices, faces = my_slice_faces_plane(vertices, faces, n_d,
+                                               plane_origin)
 
     if len(vertices) == 0:
         return None
-    else:
-        plane_origin_yz = nyz * x_start * sub_box_size
+
+    for x in range(start_fragment[0], end_fragment[0]):
+        plane_origin_yz = nyz * (x + 1) * sub_box_size
+        vertices_yz, faces_yz = my_slice_faces_plane(vertices, faces, -nyz,
+                                                     plane_origin_yz)
+
+        for y in range(start_fragment[1], end_fragment[1]):
+            plane_origin_xz = nxz * (y + 1) * sub_box_size
+            vertices_xz, faces_xz = my_slice_faces_plane(
+                vertices_yz, faces_yz, -nxz, plane_origin_xz)
+
+            for z in range(start_fragment[2], end_fragment[2]):
+                plane_origin_xy = nxy * (z + 1) * sub_box_size
+                vertices_xy, faces_xy = my_slice_faces_plane(
+                    vertices_xz, faces_xz, -nxy, plane_origin_xy)
+
+                lod_0_fragment_position = tuple(np.array([x, y, z]))
+                if current_lod != 0:
+                    fragment_position = tuple(np.array([x, y, z]) // 2)
+                else:
+                    fragment_position = lod_0_fragment_position
+
+                update_fragment_dict(combined_fragments_dictionary,
+                                     fragment_position, vertices_xy, faces_xy,
+                                     list(lod_0_fragment_position))
+
+                vertices_xz, faces_xz = my_slice_faces_plane(
+                    vertices_xz, faces_xz, nxy, plane_origin_xy)
+
+            vertices_yz, faces_yz = my_slice_faces_plane(
+                vertices_yz, faces_yz, nxz, plane_origin_xz)
+
         vertices, faces = my_slice_faces_plane(vertices, faces, nyz,
                                                plane_origin_yz)
 
-        for x in range(x_start, x_end):
-            plane_origin_yz = nyz * (x + 1) * sub_box_size
-            vertices_yz, faces_yz = my_slice_faces_plane(
-                vertices, faces, -nyz, plane_origin_yz)
+    # return combined_fragments_dictionary
+    for fragment_pos, fragment in combined_fragments_dictionary.items():
+        current_box_size = lod_0_box_size * 2**current_lod
+        draco_bytes = encode_faces_to_custom_drc_bytes(
+            fragment.vertices,
+            np.zeros(np.shape(fragment.vertices)),
+            fragment.faces,
+            np.asarray(3 * [current_box_size]),
+            np.asarray(fragment_pos) * current_box_size,
+            position_quantization_bits=10)
 
-            for y in range(start_fragment[1], end_fragment[1]):
-                plane_origin_xz = nxz * (y + 1) * sub_box_size
-                vertices_xz, faces_xz = my_slice_faces_plane(
-                    vertices_yz, faces_yz, -nxz, plane_origin_xz)
+        if len(draco_bytes) > 12:
+            fragment = CompressedFragment(
+                draco_bytes, np.asarray(fragment_pos), len(draco_bytes),
+                np.asarray(fragment.lod_0_fragment_pos))
+            fragments.append(fragment)
 
-                for z in range(start_fragment[2], end_fragment[2]):
-                    plane_origin_xy = nxy * (z + 1) * sub_box_size
-                    vertices_xy, faces_xy = my_slice_faces_plane(
-                        vertices_xz, faces_xz, -nxy, plane_origin_xy)
-
-                    lod_0_fragment_position = tuple(np.array([x, y, z]))
-                    if current_lod != 0:
-                        fragment_position = tuple(np.array([x, y, z]) // 2)
-                    else:
-                        fragment_position = lod_0_fragment_position
-
-                    update_fragment_dict(combined_fragments_dictionary,
-                                         fragment_position,
-                                         vertices_xy, faces_xy,
-                                         list(lod_0_fragment_position))
-
-                    vertices_xz, faces_xz = my_slice_faces_plane(
-                        vertices_xz, faces_xz, nxy, plane_origin_xy)
-
-                vertices_yz, faces_yz = my_slice_faces_plane(
-                    vertices_yz, faces_yz, nxz, plane_origin_xz)
-
-            vertices, faces = my_slice_faces_plane(vertices, faces, nyz,
-                                                   plane_origin_yz)
-
-        # return combined_fragments_dictionary
-        for fragment_pos, fragment in combined_fragments_dictionary.items():
-            current_box_size = lod_0_box_size * 2**current_lod
-            draco_bytes = encode_faces_to_custom_drc_bytes(
-                fragment.vertices,
-                np.zeros(np.shape(fragment.vertices)),
-                fragment.faces,
-                np.asarray(3 * [current_box_size]),
-                np.asarray(fragment_pos) * current_box_size,
-                position_quantization_bits=10)
-
-            if len(draco_bytes) > 12:
-                fragment = CompressedFragment(
-                    draco_bytes, np.asarray(fragment_pos), len(draco_bytes),
-                    np.asarray(fragment.lod_0_fragment_pos))
-                fragments.append(fragment)
-
-        return fragments
+    return fragments
 
 
 @dask.delayed
@@ -332,19 +332,36 @@ def generate_neuroglancer_multires_mesh(output_path, num_workers, id, lods,
                 np.array([0, 0, 0])).astype(int)
             end_fragment = (vertices.max(axis=0) // current_box_size +
                             1).astype(int)
-            x_stride = int(
-                np.ceil(1.0 * (end_fragment[0] - start_fragment[0]) /
-                        num_workers))
+
+            max_number_of_chunks = (end_fragment - start_fragment)
+            num_chunks = np.array([1, 1, 1])
+            sum_prev = 0
+            while np.prod(num_chunks) < num_workers and np.sum(
+                    num_chunks) != sum_prev:
+                sum_prev = np.sum(num_chunks)
+                for i in range(3):
+                    if num_chunks[i] < max_number_of_chunks[i]:
+                        num_chunks[i] += 1
+                        if np.prod(num_chunks) >= num_workers:
+                            num_chunks[i] -= 1
+
+            stride = np.ceil(1.0 * (end_fragment - start_fragment) /
+                             num_chunks).astype(np.int)
 
             vertices_scattered = client.scatter(vertices)
             faces_scattered = client.scatter(faces)
-            for x in range(start_fragment[0], end_fragment[0] + 1, x_stride):
-                results.append(
-                    generate_mesh_decomposition(vertices_scattered,
-                                                faces_scattered,
-                                                lod_0_box_size, start_fragment,
-                                                end_fragment, x, x + x_stride,
-                                                current_lod))
+            for x in range(start_fragment[0], end_fragment[0] + 1, stride[0]):
+                for y in range(start_fragment[1], end_fragment[1] + 1,
+                               stride[1]):
+                    for z in range(start_fragment[2], end_fragment[2] + 1,
+                                   stride[2]):
+                        current_start_fragment = np.array([x, y, z])
+                        current_end_fragment = current_start_fragment + stride
+                        results.append(
+                            generate_mesh_decomposition(
+                                vertices_scattered, faces_scattered,
+                                lod_0_box_size, current_start_fragment,
+                                current_end_fragment, current_lod))
 
             dask_results = dask.compute(*results)
 
