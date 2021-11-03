@@ -11,14 +11,14 @@ from yaml.loader import SafeLoader
 import dask
 import pyfqmr
 from dask.distributed import Client, worker_client
-from multiresolution_mesh_creator.util.mesh import CompressedFragment
+from ..util.mesh import CompressedFragment
 from numba import jit
 import argparse
 import getpass
 import tempfile
 import shutil
 import multiresolution_mesh_creator.util.mesh as mesh_utils
-from multiresolution_mesh_creator.util.logging import tee_streams, Timing_Messager, print_with_datetime
+from ..util.logging import tee_streams, Timing_Messager, print_with_datetime
 from datetime import datetime
 import logging
 
