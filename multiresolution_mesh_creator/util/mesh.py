@@ -39,7 +39,6 @@ def load_ngmesh(filepath):
         file_content = file.read()
 
     num_vertices, file_content = unpack_and_remove("I", 1, file_content)
-    print(num_vertices)
     vertices, file_content = unpack_and_remove("f", 3 * num_vertices,
                                                file_content)
     num_faces = int(len(file_content) / 12)
