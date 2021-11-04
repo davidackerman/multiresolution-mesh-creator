@@ -336,12 +336,6 @@ def generate_neuroglancer_multires_mesh(output_path, num_workers, id, lods,
             # if it can all fit in one dimension, do that
             # if its been filled up and can add to next dimension, do that
             # etc
-            # max_number_of_chunks = (end_fragment - start_fragment)
-            # dimensions_sorted = np.argsort(max_number_of_chunks)
-            # num_chunks = np.array([1, 1, 1])
-            # num_chunks[dimensions_sorted[2]] = np.minimum(
-            #     num_workers,
-            #     max_number_of_chunks[dimensions_sorted[2]]).astype(np.int)
 
             max_number_of_chunks = (end_fragment - start_fragment)
             dimensions_sorted = np.argsort(-max_number_of_chunks)
