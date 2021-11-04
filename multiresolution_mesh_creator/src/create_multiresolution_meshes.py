@@ -315,8 +315,6 @@ def generate_neuroglancer_multires_mesh(output_path, num_workers, id, lods,
             f"rm -rf {output_path}/multires/{id} {output_path}/multires/{id}.index"
         )
 
-        nyz, _, _ = np.eye(3)
-
         results = []
 
         for idx, current_lod in enumerate(lods):
@@ -338,6 +336,13 @@ def generate_neuroglancer_multires_mesh(output_path, num_workers, id, lods,
             # if it can all fit in one dimension, do that
             # if its been filled up and can add to next dimension, do that
             # etc
+            # max_number_of_chunks = (end_fragment - start_fragment)
+            # dimensions_sorted = np.argsort(max_number_of_chunks)
+            # num_chunks = np.array([1, 1, 1])
+            # num_chunks[dimensions_sorted[2]] = np.minimum(
+            #     num_workers,
+            #     max_number_of_chunks[dimensions_sorted[2]]).astype(np.int)
+
             max_number_of_chunks = (end_fragment - start_fragment)
             dimensions_sorted = np.argsort(-max_number_of_chunks)
             num_chunks = np.array([1, 1, 1])
@@ -352,20 +357,20 @@ def generate_neuroglancer_multires_mesh(output_path, num_workers, id, lods,
             stride = np.ceil(1.0 * (end_fragment - start_fragment) /
                              num_chunks).astype(np.int)
 
-            #vertices_scattered = client.scatter(vertices)
-            #faces_scattered = client.scatter(faces)
-            for x in range(start_fragment[0], end_fragment[0] + 1, stride[0]):
-                for y in range(start_fragment[1], end_fragment[1] + 1,
-                               stride[1]):
-                    for z in range(start_fragment[2], end_fragment[2] + 1,
+            vertices_scattered = client.scatter(vertices)
+            faces_scattered = client.scatter(faces)
+
+            for x in range(start_fragment[0], end_fragment[0], stride[0]):
+                for y in range(start_fragment[1], end_fragment[1], stride[1]):
+                    for z in range(start_fragment[2], end_fragment[2],
                                    stride[2]):
                         current_start_fragment = np.array([x, y, z])
                         current_end_fragment = current_start_fragment + stride
                         results.append(
                             generate_mesh_decomposition(
-                                vertices, faces, lod_0_box_size,
-                                current_start_fragment, current_end_fragment,
-                                current_lod, num_chunks))
+                                vertices_scattered, faces_scattered,
+                                lod_0_box_size, current_start_fragment,
+                                current_end_fragment, current_lod, num_chunks))
 
             dask_results = dask.compute(*results)
 
