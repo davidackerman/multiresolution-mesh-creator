@@ -8,7 +8,6 @@ build/
 test_meshes_output/
 workspace.code-workspace
 testing.ipynb
-dask-*
 job-logs/
 *.obj
 *.stl
