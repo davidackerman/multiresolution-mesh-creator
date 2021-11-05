@@ -12,7 +12,6 @@ import pyfqmr
 import multiresolution_mesh_creator.util.mesh_util as mesh_util
 import multiresolution_mesh_creator.util.io_util as io_util
 import multiresolution_mesh_creator.util.dask_util as dask_util
-from datetime import datetime
 import logging
 
 logger = logging.getLogger(__name__)
@@ -78,8 +77,7 @@ def update_fragment_dict(dictionary, fragment_pos, vertices, faces,
                                                       [lod_0_fragment_pos])
 
 
-@dask.delayed
-def generate_mesh_decomposition(vertices, faces, lod_0_box_size,
+def generate_mesh_decomposition(mesh_path, lod_0_box_size,
                                 start_fragment, end_fragment, current_lod,
                                 num_chunks):
     """Dask delayed function to decompose a mesh, provided as vertices and
@@ -100,8 +98,11 @@ def generate_mesh_decomposition(vertices, faces, lod_0_box_size,
     Returns:
         fragments: List of `CompressedFragments` (named tuple)
     """
-    vertices = vertices[0][1]
-    faces = faces[0][1]
+    mesh = trimesh.load(mesh_path)
+    vertices = mesh.vertices
+    faces = mesh.faces
+    del (mesh)
+
     combined_fragments_dictionary = {}
     fragments = []
 
@@ -189,7 +190,6 @@ def generate_mesh_decomposition(vertices, faces, lod_0_box_size,
     return fragments
 
 
-@dask.delayed
 def pyfqmr_decimate(input_path, output_path, id, lod, ext, decimation_factor,
                     aggressiveness):
     """Mesh decimation using pyfqmr.
@@ -253,14 +253,15 @@ def generate_decimated_meshes(input_path, output_path, lods, ids, ext,
                         exist_ok=True)
             for id in ids:
                 results.append(
-                    pyfqmr_decimate(input_path, f"{output_path}/mesh_lods", id,
-                                    current_lod, ext, decimation_factor,
-                                    aggressiveness))
+                    dask.delayed(pyfqmr_decimate)(input_path,
+                                                  f"{output_path}/mesh_lods",
+                                                  id, current_lod, ext,
+                                                  decimation_factor,
+                                                  aggressiveness))
 
     dask.compute(*results)
 
 
-@dask.delayed
 def generate_neuroglancer_multires_mesh(output_path, num_workers, id, lods,
                                         original_ext, lod_0_box_size):
     """Dask delayed function to generate multiresolution mesh in neuroglancer
@@ -290,12 +291,11 @@ def generate_neuroglancer_multires_mesh(output_path, num_workers, id, lods,
 
         for idx, current_lod in enumerate(lods):
             if current_lod == 0:
-                vertices, faces = mesh_util.mesh_loader(
-                    f"{output_path}/mesh_lods/s{current_lod}/{id}{original_ext}"
-                )
+                mesh_path = f"{output_path}/mesh_lods/s{current_lod}/{id}{original_ext}"
             else:
-                vertices, faces = mesh_util.mesh_loader(
-                    f"{output_path}/mesh_lods/s{current_lod}/{id}.stl")
+                mesh_path = f"{output_path}/mesh_lods/s{current_lod}/{id}.stl"
+
+            vertices, _ = mesh_util.mesh_loader(mesh_path)
 
             current_box_size = lod_0_box_size * 2**current_lod
             start_fragment = np.maximum(
@@ -311,6 +311,8 @@ def generate_neuroglancer_multires_mesh(output_path, num_workers, id, lods,
             max_number_of_chunks = (end_fragment - start_fragment)
             dimensions_sorted = np.argsort(-max_number_of_chunks)
             num_chunks = np.array([1, 1, 1])
+            #vertices_scattered = client.scatter(vertices)
+            #faces_scattered = client.scatter(faces)
             for _ in range(num_workers + 1):
                 for d in dimensions_sorted:
                     if num_chunks[d] < max_number_of_chunks[d]:
@@ -322,18 +324,16 @@ def generate_neuroglancer_multires_mesh(output_path, num_workers, id, lods,
             stride = np.ceil(1.0 * (end_fragment - start_fragment) /
                              num_chunks).astype(np.int)
 
-            unique_name_vertices = f"vertices_{id}_{current_lod}_{datetime.now()}"
-            unique_name_faces = f"faces_{id}_{current_lod}_{datetime.now()}"
             # if vertices.nbytes + faces.nbytes > 100_000:
             # scatter large ones
             # set hash to false here in attempt to prevent this issue: https://github.com/dask/distributed/issues/4612 ?
-            vertices_to_send = client.scatter(
-                [[unique_name_vertices, vertices]], broadcast=True)
-            faces_to_send = client.scatter([[unique_name_faces, faces]],
-                                           broadcast=True)
+
             # else:
             #    vertices_to_send = vertices
             #    faces_to_send = faces
+
+            # vertices_to_send = client.scatter(vertices, broadcast=True)
+            # faces_to_send = client.scatter(faces, broadcast=True)
 
             for x in range(start_fragment[0], end_fragment[0], stride[0]):
                 for y in range(start_fragment[1], end_fragment[1], stride[1]):
@@ -341,10 +341,9 @@ def generate_neuroglancer_multires_mesh(output_path, num_workers, id, lods,
                                    stride[2]):
                         current_start_fragment = np.array([x, y, z])
                         current_end_fragment = current_start_fragment + stride
-                        #unique_name_function = f"{unique_name_vertices}_{unique_name_faces}_{x}_{y}_{z}_{datetime.now()}"
                         results.append(
-                            generate_mesh_decomposition(
-                                vertices_to_send, faces_to_send,
+                            dask.delayed(generate_mesh_decomposition)(
+                                mesh_path,
                                 lod_0_box_size, current_start_fragment,
                                 current_end_fragment, current_lod, num_chunks))
             client.rebalance()
@@ -390,9 +389,11 @@ def generate_all_neuroglancer_multires_meshes(output_path, num_workers, ids,
     results = []
     for id in ids:
         results.append(
-            generate_neuroglancer_multires_mesh(output_path, num_workers, id,
-                                                lods, original_ext,
-                                                lod_0_box_size))
+            dask.delayed(generate_neuroglancer_multires_mesh)(output_path,
+                                                              num_workers, id,
+                                                              lods,
+                                                              original_ext,
+                                                              lod_0_box_size))
     dask.compute(*results)
 
 
