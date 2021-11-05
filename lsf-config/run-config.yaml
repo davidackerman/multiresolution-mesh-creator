@@ -8,4 +8,4 @@ required_settings:
 optional_decimation_settings:
         skip_decimation: False         # Skip mesh decimation if meshes exist; default is false
         decimation_factor: 2           # Factor by which to decimate faces at each lod, ie factor**lod; default is 2
-        aggressivness: 7               # Aggressiveness to be used for decimation; default is 7
+        aggressiveness: 10              # Aggressiveness to be used for decimation; default is 7

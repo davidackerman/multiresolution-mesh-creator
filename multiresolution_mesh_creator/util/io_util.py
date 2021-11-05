@@ -10,6 +10,9 @@ from email.mime.text import MIMEText
 from contextlib import ContextDecorator, contextmanager
 from subprocess import Popen, PIPE, TimeoutExpired, run as subprocess_run
 from datetime import datetime
+import argparse
+import yaml
+from yaml.loader import SafeLoader
 
 # Much below taken from flyemflows: https://github.com/janelia-flyem/flyemflows/blob/master/flyemflows/util/util.py
 logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
@@ -36,6 +39,45 @@ class Timing_Messager(ContextDecorator):
 def print_with_datetime(output, logger):
     now = datetime.now().strftime("%Y/%m/%d %H:%M:%S")
     logger.info(f"{now}: {output}")
+
+
+def read_run_config(config_path):
+    with open(f"{config_path}/run-config.yaml") as f:
+        config = yaml.load(f, Loader=SafeLoader)
+        required_settings = config['required_settings']
+        optional_decimation_settings = config.get(
+            "optional_decimation_settings", {})
+
+        if "skip_decimation" not in optional_decimation_settings:
+            optional_decimation_settings["skip_decimation"] = False
+        if "decimation_factor" not in optional_decimation_settings:
+            optional_decimation_settings["decimation_factor"] = 2
+        if "aggressiveness" not in optional_decimation_settings:
+            optional_decimation_settings["aggressiveness"] = 7
+
+        return required_settings, optional_decimation_settings
+
+
+def parser_params():
+    parser = argparse.ArgumentParser(
+        description=
+        'Code to convert single-scale (or a set of multi-scale) meshes to the neuroglancer multi-resolution mesh format'
+    )
+    parser.add_argument(
+        "config_path",
+        type=str,
+        help="Path to directory containing run-config.yaml and dask-config.yaml"
+    )
+    parser.add_argument(
+        '--num-workers',
+        '-n',
+        type=int,
+        default=1,
+        help=
+        'Number of workers to launch (i.e. each worker is launched with a single bsub command)'
+    )
+
+    return parser.parse_args()
 
 
 @contextmanager
