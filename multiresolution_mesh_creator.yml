@@ -40,6 +40,7 @@ dependencies:
   - cytoolz=0.11.0=py37h7b6447c_0
   - dask=2021.7.2=pyhd3eb1b0_0
   - dask-core=2021.7.2=pyhd3eb1b0_0
+  - dask-jobqueue=0.7.3=pyhd8ed1ab_0
   - dbus=1.13.18=hb2f20db_0
   - debugpy=1.4.1=py37h295c915_0
   - decorator=5.1.0=pyhd3eb1b0_0

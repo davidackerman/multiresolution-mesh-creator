@@ -1,0 +1,33 @@
+jobqueue:
+  local:
+    # Cluster slots are reserved in chunks.
+    # This specifies the chunk size.
+    ncpus: 1
+
+    # How many dask worker processed to run per chunk.
+    # (Leave one thread empty for garbage collection.)
+    processes: 1
+
+    # How many threads to use in each chunk.
+    # (Use just one thread per process -- no internal thread pools.)
+    cores: 1
+
+    log-directory: job-logs
+    name: dask-worker
+
+distributed:
+  scheduler:
+    work-stealing: true
+
+  worker:
+    memory:
+      target: 0.0
+      spill: 0.0
+      pause: 0.0
+      terminate: 0.0
+
+  admin:
+    log-format: '[%(asctime)s] %(levelname)s %(message)s'
+    tick:
+      interval: 20ms  # time between event loop health checks
+      limit: 3h       # time allowed before triggering a warning

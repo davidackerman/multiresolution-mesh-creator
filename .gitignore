@@ -8,5 +8,16 @@ build/
 test_meshes_output/
 workspace.code-workspace
 testing.ipynb
+job-logs/
 *.obj
 *.stl
+backup-configs/
+my-configs/
+*-2021*/
+lsf-config0*/
+*.egg-info/
+dist/
+lsf-config-*
+lsf-config_*
+local-config-*
+local-config_*
