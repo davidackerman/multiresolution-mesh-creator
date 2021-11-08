@@ -126,7 +126,8 @@ INFO:2021/11/08 12:16:45: Complete! Elapsed time: 13.888124704360962
 The multiresolution meshes will be in `test_mehes_output/multires/`. You can use something like [http-server](https://www.npmjs.com/package/http-server) to serve up that directory for viewing in neuroglancer. See the demo below to see the results of running the above command.
 
 To run this on eg. an LSF cluster, you would do something like this:
-```bsub -n 2 -P your_project_name create-multiresolution-meshes lsf-config -n 40
+```
+bsub -n 2 -P your_project_name create-multiresolution-meshes lsf-config -n 40
 ```
 
 Where the bsub command is used to set up your job to run on the cluster, with eg. 2 cores for the dask driver. `create-multiresolution-meshes` then sets up the dask cluster on the LSF cluster using those drivers.
