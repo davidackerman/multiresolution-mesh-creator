@@ -7,7 +7,7 @@ This repository is meant to be used to create multiresolution meshes in the [neu
 ```
 git clone --recursive https://github.com/janelia-cosem/multiresolution-mesh-creator.git
 ```
-2. `cd` to repo directory and setup a conda environment using the provided yaml file:
+2. `cd` to repo directory and setup a [conda](https://docs.conda.io/en/latest/) environment using the provided yaml file:
 ```
 conda env update -n multiresolution_mesh_creator --file multiresolution_mesh_creator.yml
 ```
@@ -15,8 +15,9 @@ conda env update -n multiresolution_mesh_creator --file multiresolution_mesh_cre
 ```
 conda activate multiresolution_mesh_creator
 ```
-4. Install `dvidutils` - used for custom draco quantization - as described in the submodule:
-```cd dvidutils
+4. Install `dvidutils` - used for custom draco quantization - as described in the submodule
+```
+cd dvidutils
 mkdir build
 cd build
 
@@ -35,7 +36,7 @@ make install
 cd pyfqmr-Fast-Quadric-Mesh-Reduction
 python setup.py install
 ```
-6. `cd` to this repo repository, and install via:
+6. `cd` to this repository directory, and install it via:
 ```
 pip install .
 ```
@@ -125,7 +126,7 @@ INFO:2021/11/08 12:16:45: Complete! Elapsed time: 13.888124704360962
 
 The multiresolution meshes will be in `test_mehes_output/multires/`. You can use something like [http-server](https://www.npmjs.com/package/http-server) to serve up that directory for viewing in neuroglancer. See the demo below to see the results of running the above command.
 
-To run this on eg. an LSF cluster, you would do something like this:
+To run this on eg. an LSF cluster with 40 workers, you would do something like this:
 ```
 bsub -n 2 -P your_project_name create-multiresolution-meshes lsf-config -n 40
 ```
