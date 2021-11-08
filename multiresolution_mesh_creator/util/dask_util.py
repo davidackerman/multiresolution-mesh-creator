@@ -11,9 +11,19 @@ import yaml
 from yaml.loader import SafeLoader
 
 
-def _set_local_directory(cluster_type):
-    # from https://github.com/janelia-flyem/flyemflows/blob/6ae20cb58fd55e74b47a43efdab7e09908a346ba/flyemflows/util/dask_util.py
+def set_local_directory(cluster_type):
+    """Sets local directory used for dask outputs
+
+    Args:
+        cluster_type ('str'): The type of cluster used
+
+    Raises:
+        RuntimeError: Error if cannot create directory
+    """
+
+    # From https://github.com/janelia-flyem/flyemflows/blob/master/flyemflows/util/dask_util.py
     # This specifies where dask workers will dump cached data
+
     local_dir = dask.config.get(f"jobqueue.{cluster_type}.local-directory",
                                 None)
     if local_dir:
@@ -46,6 +56,16 @@ def _set_local_directory(cluster_type):
 
 @contextmanager
 def start_dask(num_workers, msg, logger):
+    """Context manager used for starting/shutting down dask
+
+    Args:
+        num_workers (`int`): Number of dask workers
+        msg (`str`): Message for timer
+        logger: The logger being used
+
+    Yields:
+        client: Dask client
+    """
 
     # Update dask
     with open("dask-config.yaml") as f:
@@ -53,7 +73,7 @@ def start_dask(num_workers, msg, logger):
         dask.config.update(dask.config.config, config)
 
     cluster_type = next(iter(dask.config.config['jobqueue']))
-    _set_local_directory(cluster_type)
+    set_local_directory(cluster_type)
 
     if cluster_type == 'local':
         from dask.distributed import LocalCluster
@@ -82,8 +102,19 @@ def start_dask(num_workers, msg, logger):
 
 
 def setup_execution_directory(config_path, logger):
+    """Sets up the excecution directory which is the config dir appended with
+    the date and time.
+
+    Args:
+        config_path ('str'): Path to config directory
+        logger: Logger being used
+
+    Returns:
+        execution_dir ['str']: execution directory
+    """
+
     # Create execution dir (copy of template dir) and make it the CWD
-    # from flyemflows: https://github.com/janelia-flyem/flyemflows/blob/03cfd79ccc1dcd4903007b36759f4b677ca5c67e/flyemflows/bin/launchflow.py
+    # from flyemflows: https://github.com/janelia-flyem/flyemflows/blob/master/flyemflows/bin/launchflow.py
     timestamp = f'{datetime.now():%Y%m%d.%H%M%S}'
     execution_dir = f'{config_path}-{timestamp}'
     execution_dir = os.path.abspath(execution_dir)

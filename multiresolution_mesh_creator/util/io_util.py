@@ -20,16 +20,31 @@ logger = logging.getLogger(__name__)
 
 
 class Timing_Messager(ContextDecorator):
+    """Context manager class to time operations
+    """
     def __init__(self, base_message, logger):
+        """Initialize instance with a message and logger
+
+        Args:
+            base_message ('str'): Message for logger
+            logger: logger to be used
+        """
+
         self._base_message = base_message
         self._logger = logger
 
     def __enter__(self):
+        """Set the start time and print the status message
+        """
+
         print_with_datetime(f"{self._base_message}...", self._logger)
         self._start_time = time.time()
         return self
 
     def __exit__(self, *exc):
+        """Print the exit message and elapsed time
+        """
+
         print_with_datetime(
             f"{self._base_message} completed in {time.time()-self._start_time}!",
             self._logger)
@@ -37,11 +52,26 @@ class Timing_Messager(ContextDecorator):
 
 
 def print_with_datetime(output, logger):
+    """[summary]
+
+    Args:
+        output ([type]): [description]
+        logger ([type]): [description]
+    """
     now = datetime.now().strftime("%Y/%m/%d %H:%M:%S")
     logger.info(f"{now}: {output}")
 
 
 def read_run_config(config_path):
+    """Reads the run config from config_path and stores them
+
+    Args:
+        config_path ('str'): Path to config directory
+
+    Returns:
+        Dicts of required_settings and optional_decimation_settings
+    """
+
     with open(f"{config_path}/run-config.yaml") as f:
         config = yaml.load(f, Loader=SafeLoader)
         required_settings = config['required_settings']
@@ -54,11 +84,16 @@ def read_run_config(config_path):
             optional_decimation_settings["decimation_factor"] = 2
         if "aggressiveness" not in optional_decimation_settings:
             optional_decimation_settings["aggressiveness"] = 7
+        if "delete_decimated_meshes" not in optional_decimation_settings:
+            optional_decimation_settings["delete_decimated_meshes"] = False
 
         return required_settings, optional_decimation_settings
 
 
 def parser_params():
+    """Parse command line parameters including the config path and number of workers.
+    """
+
     parser = argparse.ArgumentParser(
         description=
         'Code to convert single-scale (or a set of multi-scale) meshes to the neuroglancer multi-resolution mesh format'

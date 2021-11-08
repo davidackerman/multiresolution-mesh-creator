@@ -9,9 +9,7 @@ from os.path import isfile, join, splitext
 import dask
 from dask.distributed import worker_client
 import pyfqmr
-import multiresolution_mesh_creator.util.mesh_util as mesh_util
-import multiresolution_mesh_creator.util.io_util as io_util
-import multiresolution_mesh_creator.util.dask_util as dask_util
+from ..util import mesh_util, io_util, dask_util
 import logging
 
 logger = logging.getLogger(__name__)
@@ -77,17 +75,15 @@ def update_fragment_dict(dictionary, fragment_pos, vertices, faces,
                                                       [lod_0_fragment_pos])
 
 
-def generate_mesh_decomposition(mesh_path, lod_0_box_size,
-                                start_fragment, end_fragment, current_lod,
-                                num_chunks):
+def generate_mesh_decomposition(mesh_path, lod_0_box_size, start_fragment,
+                                end_fragment, current_lod, num_chunks):
     """Dask delayed function to decompose a mesh, provided as vertices and
     faces, into fragments of size lod_0_box_size * 2**current_lod. Each
     fragment is also subdivided by 2x2x2. This is performed over a limited
     xrange in order to parallelize via dask.
 
     Args:
-        vertices: Vertices
-        faces: Faces
+        mesh_path: Path to current lod mesh
         lod_0_box_size: Base chunk shape
         start_fragment: Start fragment position (x,y,z)
         end_fragment: End fragment position (x,y,z)
@@ -98,6 +94,12 @@ def generate_mesh_decomposition(mesh_path, lod_0_box_size,
     Returns:
         fragments: List of `CompressedFragments` (named tuple)
     """
+
+    # We load the mesh here because if we load once in
+    # generate_all_neuroglancer_meshes and use cluster.scatter onvertices and
+    # faces we get this issue about concurrent futures:
+    # https://github.com/dask/distributed/issues/4612
+
     mesh = trimesh.load(mesh_path)
     vertices = mesh.vertices
     faces = mesh.faces
@@ -136,6 +138,8 @@ def generate_mesh_decomposition(mesh_path, lod_0_box_size,
     if len(vertices) == 0:
         return None
 
+    # Get chunks of desired size by slicing in x,y,z and ensure their chunks
+    # are divisible by 2x2x2 chunks
     for x in range(start_fragment[0], end_fragment[0]):
         plane_origin_yz = nyz * (x + 1) * sub_box_size
         vertices_yz, faces_yz = my_slice_faces_plane(vertices, faces, -nyz,
@@ -170,7 +174,7 @@ def generate_mesh_decomposition(mesh_path, lod_0_box_size,
         vertices, faces = my_slice_faces_plane(vertices, faces, nyz,
                                                plane_origin_yz)
 
-    # return combined_fragments_dictionary
+    # Return combined_fragments_dictionary
     for fragment_pos, fragment in combined_fragments_dictionary.items():
         current_box_size = lod_0_box_size * 2**current_lod
         draco_bytes = encode_faces_to_custom_drc_bytes(
@@ -182,6 +186,7 @@ def generate_mesh_decomposition(mesh_path, lod_0_box_size,
             position_quantization_bits=10)
 
         if len(draco_bytes) > 12:
+            # Then the mesh is not empty
             fragment = mesh_util.CompressedFragment(
                 draco_bytes, np.asarray(fragment_pos), len(draco_bytes),
                 np.asarray(fragment.lod_0_fragment_pos))
@@ -273,7 +278,7 @@ def generate_neuroglancer_multires_mesh(output_path, num_workers, id, lods,
     a worker to be further subdivided.
 
     Args:
-        output_path (`str`): Output path to write out neuroglancer mesh
+        output_path (`str`): Output path to writeout neuroglancer mesh
         num_workers (`int`): Number of workers for dask
         id (`int`): Mesh id
         lods (`list`): List of levels of detail
@@ -304,15 +309,18 @@ def generate_neuroglancer_multires_mesh(output_path, num_workers, id, lods,
             end_fragment = (vertices.max(axis=0) // current_box_size +
                             1).astype(int)
 
-            # if it can all fit in one dimension, do that
-            # if its been filled up and can add to next dimension, do that
-            # etc
+            # Want to divide the mesh up into upto num_workers chunks. We do
+            # that by first subdividing the largest dimension as much as
+            # possible, followed by the next largest dimension etc so long
+            # as we don't exceed num_workers slices. If we instead slice each
+            # dimension once, before slicing any dimension twice etc, it would
+            # increase the number of mesh slice operations we perform, which
+            # seems slow.
 
             max_number_of_chunks = (end_fragment - start_fragment)
             dimensions_sorted = np.argsort(-max_number_of_chunks)
             num_chunks = np.array([1, 1, 1])
-            #vertices_scattered = client.scatter(vertices)
-            #faces_scattered = client.scatter(faces)
+
             for _ in range(num_workers + 1):
                 for d in dimensions_sorted:
                     if num_chunks[d] < max_number_of_chunks[d]:
@@ -324,14 +332,10 @@ def generate_neuroglancer_multires_mesh(output_path, num_workers, id, lods,
             stride = np.ceil(1.0 * (end_fragment - start_fragment) /
                              num_chunks).astype(np.int)
 
-            # if vertices.nbytes + faces.nbytes > 100_000:
-            # scatter large ones
-            # set hash to false here in attempt to prevent this issue: https://github.com/dask/distributed/issues/4612 ?
-
-            # else:
-            #    vertices_to_send = vertices
-            #    faces_to_send = faces
-
+            # Scattering here, unless broadcast=True, causes this issue:
+            # https://github.com/dask/distributed/issues/4612. But that is
+            # slow so we are currently electing to read the meshes each time
+            # within generate_mesh_decomposition.
             # vertices_to_send = client.scatter(vertices, broadcast=True)
             # faces_to_send = client.scatter(faces, broadcast=True)
 
@@ -343,9 +347,9 @@ def generate_neuroglancer_multires_mesh(output_path, num_workers, id, lods,
                         current_end_fragment = current_start_fragment + stride
                         results.append(
                             dask.delayed(generate_mesh_decomposition)(
-                                mesh_path,
-                                lod_0_box_size, current_start_fragment,
-                                current_end_fragment, current_lod, num_chunks))
+                                mesh_path, lod_0_box_size,
+                                current_start_fragment, current_end_fragment,
+                                current_lod, num_chunks))
             client.rebalance()
             dask_results = dask.compute(*results)
 
@@ -398,14 +402,17 @@ def generate_all_neuroglancer_multires_meshes(output_path, num_workers, ids,
 
 
 def main():
-    submission_directory = os.getcwd()
+    """Main function called when running code
+    """
 
-    # If more than 1 thread per worker, run into issues with decimation?
+    # Get information regarding run
+    submission_directory = os.getcwd()
     args = io_util.parser_params()
     num_workers = args.num_workers
     required_settings, optional_decimation_settings = io_util.read_run_config(
         args.config_path)
 
+    # Setup config parameters
     input_path = required_settings['input_path']
     output_path = required_settings['output_path']
     num_lods = required_settings['num_lods']
@@ -414,11 +421,15 @@ def main():
     skip_decimation = optional_decimation_settings['skip_decimation']
     decimation_factor = optional_decimation_settings['decimation_factor']
     aggressiveness = optional_decimation_settings['aggressiveness']
+    delete_decimated_meshes = optional_decimation_settings[
+        'delete_decimated_meshes']
 
+    # Change execution directory
     execution_directory = dask_util.setup_execution_directory(
         args.config_path, logger)
     logpath = f'{execution_directory}/output.log'
 
+    # Start mesh creation
     with io_util.tee_streams(logpath):
 
         try:
@@ -457,9 +468,13 @@ def main():
             # Writing out top-level files
             with io_util.Timing_Messager(
                     "Writing info and segment properties files", logger):
-                output_path = f"{output_path}/multires"
-                mesh_util.write_segment_properties_file(output_path)
-                mesh_util.write_info_file(output_path)
+                multires_output_path = f"{output_path}/multires"
+                mesh_util.write_segment_properties_file(multires_output_path)
+                mesh_util.write_info_file(multires_output_path)
+            if not skip_decimation and delete_decimated_meshes:
+                with io_util.Timing_Messager("Deleting decimated meshes",
+                                             logger):
+                    os.system(f"rm -rf {output_path}/mesh_lods")
 
             io_util.print_with_datetime(
                 f"Complete! Elapsed time: {time.time() - t0}", logger)
@@ -468,4 +483,6 @@ def main():
 
 
 if __name__ == "__main__":
+    """Run main function
+    """
     main()
