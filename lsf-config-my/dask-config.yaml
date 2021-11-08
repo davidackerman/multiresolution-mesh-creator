@@ -19,7 +19,7 @@ jobqueue:
     log-directory: job-logs
     name: multiresolution-mesh-creator
 
-    project: your_project_name
+    project: cellmap
 
 distributed:
   scheduler:
