@@ -219,13 +219,18 @@ def pyfqmr_decimate(input_path, output_path, id, lod, ext, decimation_factor,
     desired_faces = max(len(faces) // (decimation_factor**lod), 4)
     mesh_simplifier = pyfqmr.Simplify()
     mesh_simplifier.setMesh(vertices, faces)
+    del vertices
+    del faces
     mesh_simplifier.simplify_mesh(target_count=desired_faces,
                                   aggressiveness=aggressiveness,
                                   preserve_border=False,
                                   verbose=False)
     vertices, faces, _ = mesh_simplifier.getMesh()
+    del mesh_simplifier
 
     mesh = trimesh.Trimesh(vertices, faces)
+    del vertices
+    del faces
     mesh.export(f"{output_path}/s{lod}/{id}.stl")
 
 
