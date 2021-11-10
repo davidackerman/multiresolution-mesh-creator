@@ -96,7 +96,7 @@ If you only have meshes for lod 0, then you must run mesh decimation. Mesh decim
 NOTE: The actual decimation amount is not guaranteed by the decimation factor, but is instead dependent on other [pyfqmr](https://github.com/Kramer84/pyfqmr-Fast-Quadric-Mesh-Reduction) settings as well, such as `aggressiveness`. A lower aggressiveness is more conservative, but means that decimation might not hit its target number of faces. Empirically, `aggressiveness: 10` tends to reach the desired decimation levels, but the default is set to the more conservative value of 7.
 
 ## Example
-Two meshes are provided in `test_meshes` as an example (a bunny (`1.stl`) and a teapot (`2.stl`)). These are provided at a single, lod 0 scale. To turn these single resolution meshes into neuroglancer formatted multiresolution meshes using 10 local dask workers, you would run the following
+Two meshes are provided in `test_meshes` as an example (a bunny (`1.ply`) and a teapot (`2.ply`)). These are provided at a single, lod 0 scale. To turn these single resolution meshes into neuroglancer formatted multiresolution meshes using 10 local dask workers, you would run the following
 
 ```
 create-multiresolution-meshes /path/to/local-config -n 10
