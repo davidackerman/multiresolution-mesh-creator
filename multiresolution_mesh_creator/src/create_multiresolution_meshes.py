@@ -201,7 +201,7 @@ def pyfqmr_decimate(input_path, output_path, id, lod, ext, decimation_factor,
 
     Decimation is performed on a mesh located at `input_path`/`id`.`ext`. The
     target number of faces is 1/2**`lod` of the current number of faces. The
-    mesh is written to an stl file in `output_path`/s`lod`/`id`.stl. This
+    mesh is written to an ply file in `output_path`/s`lod`/`id`.ply. This
     utilizes `dask.delayed`.
 
     Args:
@@ -231,7 +231,7 @@ def pyfqmr_decimate(input_path, output_path, id, lod, ext, decimation_factor,
     mesh = trimesh.Trimesh(vertices, faces)
     del vertices
     del faces
-    mesh.export(f"{output_path}/s{lod}/{id}.stl")
+    mesh.export(f"{output_path}/s{lod}/{id}.ply")
 
 
 def generate_decimated_meshes(input_path, output_path, lods, ids, ext,
@@ -303,7 +303,7 @@ def generate_neuroglancer_multires_mesh(output_path, num_workers, id, lods,
             if current_lod == 0:
                 mesh_path = f"{output_path}/mesh_lods/s{current_lod}/{id}{original_ext}"
             else:
-                mesh_path = f"{output_path}/mesh_lods/s{current_lod}/{id}.stl"
+                mesh_path = f"{output_path}/mesh_lods/s{current_lod}/{id}.ply"
 
             vertices, _ = mesh_util.mesh_loader(mesh_path)
 
@@ -313,6 +313,7 @@ def generate_neuroglancer_multires_mesh(output_path, num_workers, id, lods,
                 np.array([0, 0, 0])).astype(int)
             end_fragment = (vertices.max(axis=0) // current_box_size +
                             1).astype(int)
+            del vertices
 
             # Want to divide the mesh up into upto num_workers chunks. We do
             # that by first subdividing the largest dimension as much as
@@ -355,8 +356,11 @@ def generate_neuroglancer_multires_mesh(output_path, num_workers, id, lods,
                                 mesh_path, lod_0_box_size,
                                 current_start_fragment, current_end_fragment,
                                 current_lod, num_chunks))
+
             client.rebalance()
             dask_results = dask.compute(*results)
+
+            results = []
 
             # Remove empty slabs
             dask_results = [
@@ -368,16 +372,14 @@ def generate_neuroglancer_multires_mesh(output_path, num_workers, id, lods,
                 for fragment in fragments
             ]
 
-            results = []
-            dask_results = []
+            del dask_results
+
             mesh_util.write_mesh_files(
                 f"{output_path}/multires", f"{id}", fragments, current_lod,
                 lods[:idx + 1],
                 np.asarray([lod_0_box_size, lod_0_box_size, lod_0_box_size]))
 
-    io_util.print_with_datetime(
-        f"Completed creation of multiresolution neuroglancer mesh for mesh {id}!",
-        logger)
+            del fragments
 
 
 def generate_all_neuroglancer_multires_meshes(output_path, num_workers, ids,
