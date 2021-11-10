@@ -231,7 +231,7 @@ def pyfqmr_decimate(input_path, output_path, id, lod, ext, decimation_factor,
     mesh = trimesh.Trimesh(vertices, faces)
     del vertices
     del faces
-    mesh.export(f"{output_path}/s{lod}/{id}.ply")
+    _ = mesh.export(f"{output_path}/s{lod}/{id}.ply")
 
 
 def generate_decimated_meshes(input_path, output_path, lods, ids, ext,
@@ -478,6 +478,7 @@ def main():
                 multires_output_path = f"{output_path}/multires"
                 mesh_util.write_segment_properties_file(multires_output_path)
                 mesh_util.write_info_file(multires_output_path)
+
             if not skip_decimation and delete_decimated_meshes:
                 with io_util.Timing_Messager("Deleting decimated meshes",
                                              logger):
