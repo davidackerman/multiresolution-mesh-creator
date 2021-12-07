@@ -133,11 +133,13 @@ def zorder_fragments(fragments):
     Returns:
         fragments: Z-curve sorted fragments
     """
-
-    fragments, _ = zip(
-        *sorted(zip(fragments, [fragment.position for fragment in fragments]),
-                key=cmp_to_key(lambda x, y: _cmp_zorder(x[1], y[1]))))
-    return list(fragments)
+    try:
+        fragments, _ = zip(
+            *sorted(zip(fragments, [fragment.position for fragment in fragments]),
+                    key=cmp_to_key(lambda x, y: _cmp_zorder(x[1], y[1]))))
+        return list(fragments)
+    except:
+        return -1
 
 
 def rewrite_index_with_empty_fragments(path, current_lod_fragments):
@@ -389,6 +391,8 @@ def write_mesh_files(mesh_directory, object_id, fragments, current_lod, lods,
     """
 
     path = mesh_directory + "/" + object_id
-    fragments = zorder_fragments(fragments)
-    fragments = write_mesh_file(path, fragments)
-    write_index_file(path, fragments, current_lod, lods, chunk_shape)
+    if len(fragments) > 0:
+        # If len(fragments) < 0, that means that the mesh has been reduced to nothing after draco compression
+        fragments = zorder_fragments(fragments)
+        fragments = write_mesh_file(path, fragments)
+        write_index_file(path, fragments, current_lod, lods, chunk_shape)
