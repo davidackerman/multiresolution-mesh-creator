@@ -133,13 +133,11 @@ def zorder_fragments(fragments):
     Returns:
         fragments: Z-curve sorted fragments
     """
-    try:
-        fragments, _ = zip(
-            *sorted(zip(fragments, [fragment.position for fragment in fragments]),
-                    key=cmp_to_key(lambda x, y: _cmp_zorder(x[1], y[1]))))
-        return list(fragments)
-    except:
-        return -1
+
+    fragments, _ = zip(
+        *sorted(zip(fragments, [fragment.position for fragment in fragments]),
+                key=cmp_to_key(lambda x, y: _cmp_zorder(x[1], y[1]))))
+    return list(fragments)
 
 
 def rewrite_index_with_empty_fragments(path, current_lod_fragments):
