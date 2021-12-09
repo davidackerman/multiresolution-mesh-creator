@@ -390,7 +390,7 @@ def write_mesh_files(mesh_directory, object_id, fragments, current_lod, lods,
 
     path = mesh_directory + "/" + object_id
     if len(fragments) > 0:
-        # If len(fragments) < 0, that means that the mesh has been reduced to nothing after draco compression
+        # If len(fragments) == 0, that means that the mesh has been reduced to nothing after draco compression
         fragments = zorder_fragments(fragments)
         fragments = write_mesh_file(path, fragments)
         write_index_file(path, fragments, current_lod, lods, chunk_shape)
