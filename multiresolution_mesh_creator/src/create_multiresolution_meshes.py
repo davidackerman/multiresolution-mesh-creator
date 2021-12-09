@@ -1,3 +1,4 @@
+from contextlib import ExitStack
 import trimesh
 from trimesh.intersections import slice_faces_plane
 import numpy as np
@@ -291,7 +292,11 @@ def generate_neuroglancer_multires_mesh(output_path, num_workers, id, lods,
         lod_0_box_size (`int`): Box size in lod 0 coordinates
     """
 
-    with worker_client() as client:
+    with ExitStack() as stack:
+        if num_workers > 1:
+            # Worker client context really slows things down a lot, so only need to do it if we will actually parallelize
+            client = stack.enter_context(worker_client())
+
         os.makedirs(f"{output_path}/multires", exist_ok=True)
         os.system(
             f"rm -rf {output_path}/multires/{id} {output_path}/multires/{id}.index"
@@ -345,34 +350,46 @@ def generate_neuroglancer_multires_mesh(output_path, num_workers, id, lods,
             # vertices_to_send = client.scatter(vertices, broadcast=True)
             # faces_to_send = client.scatter(faces, broadcast=True)
 
+            decomposition_results = []
             for x in range(start_fragment[0], end_fragment[0], stride[0]):
                 for y in range(start_fragment[1], end_fragment[1], stride[1]):
                     for z in range(start_fragment[2], end_fragment[2],
                                    stride[2]):
                         current_start_fragment = np.array([x, y, z])
                         current_end_fragment = current_start_fragment + stride
-                        results.append(
-                            dask.delayed(generate_mesh_decomposition)(
-                                mesh_path, lod_0_box_size,
-                                current_start_fragment, current_end_fragment,
-                                current_lod, num_chunks))
+                        if num_workers == 1:
+                            # then we aren't parallelizing again
+                            decomposition_results.append(
+                                generate_mesh_decomposition(
+                                    mesh_path, lod_0_box_size,
+                                    current_start_fragment,
+                                    current_end_fragment, current_lod,
+                                    num_chunks))
+                        else:
+                            results.append(
+                                dask.delayed(generate_mesh_decomposition)(
+                                    mesh_path, lod_0_box_size,
+                                    current_start_fragment,
+                                    current_end_fragment, current_lod,
+                                    num_chunks))
 
-            client.rebalance()
-            dask_results = dask.compute(*results)
+            if num_workers > 1:
+                client.rebalance()
+                decomposition_results = dask.compute(*results)
 
             results = []
 
             # Remove empty slabs
-            dask_results = [
-                fragments for fragments in dask_results if fragments
+            decomposition_results = [
+                fragments for fragments in decomposition_results if fragments
             ]
 
             fragments = [
-                fragment for fragments in dask_results
+                fragment for fragments in decomposition_results
                 for fragment in fragments
             ]
 
-            del dask_results
+            del decomposition_results
 
             mesh_util.write_mesh_files(
                 f"{output_path}/multires", f"{id}", fragments, current_lod,
@@ -396,15 +413,36 @@ def generate_all_neuroglancer_multires_meshes(output_path, num_workers, ids,
         original_ext (`str`): Original mesh file extension
         lod_0_box_size (`int`): Box size in lod 0 coordinates
     """
+    def get_number_of_subtask_workers(output_path, ids, original_ext,
+                                      num_workers):
+        # Given a maximum number of workers, this function gets the maximum
+        # workers for a given object based on sizes. This is to prevent
+        # overloading dask with hundreds of thousands of nested tasks when
+        # lots of small objects are present
 
+        total_file_size = 0
+        file_sizes = np.zeros((len(ids), ), dtype=np.int)
+        for idx, id in enumerate(ids):
+            current_size = os.stat(
+                f"{output_path}/mesh_lods/s0/{id}{original_ext}").st_size
+            total_file_size += current_size
+            file_sizes[idx] = current_size
+
+        num_workers_per_byte = num_workers / total_file_size
+        num_subtask_workers = np.ceil(file_sizes *
+                                      num_workers_per_byte).astype(np.int)
+        return num_subtask_workers
+
+    num_subtask_workers = get_number_of_subtask_workers(
+        output_path, ids, original_ext, num_workers)
     results = []
-    for id in ids:
+
+    for idx, id in enumerate(ids):
         results.append(
-            dask.delayed(generate_neuroglancer_multires_mesh)(output_path,
-                                                              num_workers, id,
-                                                              lods,
-                                                              original_ext,
-                                                              lod_0_box_size))
+            dask.delayed(generate_neuroglancer_multires_mesh)(
+                output_path, num_subtask_workers[idx], id, lods, original_ext,
+                lod_0_box_size))
+
     dask.compute(*results)
 
 
