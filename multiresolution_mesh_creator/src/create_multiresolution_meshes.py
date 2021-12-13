@@ -315,12 +315,13 @@ def generate_neuroglancer_multires_mesh(output_path, num_workers, id, lods,
 
             vertices, _ = mesh_util.mesh_loader(mesh_path)
 
-            current_box_size = lod_0_box_size * 2**current_lod
             if current_lod == 0:
-                grid_origin = (vertices.min(axis=0) // current_box_size -
-                               1) * current_box_size
+                max_box_size = lod_0_box_size * 2**lods[-1]
+                grid_origin = (vertices.min(axis=0) // max_box_size -
+                               1) * max_box_size
             vertices -= grid_origin
 
+            current_box_size = lod_0_box_size * 2**current_lod
             start_fragment = np.maximum(
                 vertices.min(axis=0) // current_box_size - 1,
                 np.array([0, 0, 0])).astype(int)
