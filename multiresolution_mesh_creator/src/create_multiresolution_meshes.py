@@ -76,8 +76,9 @@ def update_fragment_dict(dictionary, fragment_pos, vertices, faces,
                                                       [lod_0_fragment_pos])
 
 
-def generate_mesh_decomposition(mesh_path, lod_0_box_size, start_fragment,
-                                end_fragment, current_lod, num_chunks):
+def generate_mesh_decomposition(mesh_path, lod_0_box_size, grid_origin,
+                                start_fragment, end_fragment, current_lod,
+                                num_chunks):
     """Dask delayed function to decompose a mesh, provided as vertices and
     faces, into fragments of size lod_0_box_size * 2**current_lod. Each
     fragment is also subdivided by 2x2x2. This is performed over a limited
@@ -86,6 +87,7 @@ def generate_mesh_decomposition(mesh_path, lod_0_box_size, start_fragment,
     Args:
         mesh_path: Path to current lod mesh
         lod_0_box_size: Base chunk shape
+        grid_origin: The lod 0 mesh grid origin
         start_fragment: Start fragment position (x,y,z)
         end_fragment: End fragment position (x,y,z)
         x_start: Starting x position for this dask task
@@ -104,7 +106,7 @@ def generate_mesh_decomposition(mesh_path, lod_0_box_size, start_fragment,
     mesh = trimesh.load(mesh_path)
     vertices = mesh.vertices
     faces = mesh.faces
-    del (mesh)
+    del mesh
 
     combined_fragments_dictionary = {}
     fragments = []
@@ -121,6 +123,8 @@ def generate_mesh_decomposition(mesh_path, lod_0_box_size, start_fragment,
         sub_box_size = lod_0_box_size * 2**(current_lod - 1)
     else:
         sub_box_size = lod_0_box_size
+
+    vertices -= grid_origin
 
     # Set up slab for current dask task
     n = np.eye(3)
@@ -303,7 +307,6 @@ def generate_neuroglancer_multires_mesh(output_path, num_workers, id, lods,
         )
 
         results = []
-
         for idx, current_lod in enumerate(lods):
             if current_lod == 0:
                 mesh_path = f"{output_path}/mesh_lods/s{current_lod}/{id}{original_ext}"
@@ -313,11 +316,17 @@ def generate_neuroglancer_multires_mesh(output_path, num_workers, id, lods,
             vertices, _ = mesh_util.mesh_loader(mesh_path)
 
             current_box_size = lod_0_box_size * 2**current_lod
+            if current_lod == 0:
+                grid_origin = (vertices.min(axis=0) // current_box_size -
+                               1) * current_box_size
+            vertices -= grid_origin
+
             start_fragment = np.maximum(
                 vertices.min(axis=0) // current_box_size - 1,
                 np.array([0, 0, 0])).astype(int)
             end_fragment = (vertices.max(axis=0) // current_box_size +
                             1).astype(int)
+
             del vertices
 
             # Want to divide the mesh up into upto num_workers chunks. We do
@@ -361,14 +370,14 @@ def generate_neuroglancer_multires_mesh(output_path, num_workers, id, lods,
                             # then we aren't parallelizing again
                             decomposition_results.append(
                                 generate_mesh_decomposition(
-                                    mesh_path, lod_0_box_size,
+                                    mesh_path, lod_0_box_size, grid_origin,
                                     current_start_fragment,
                                     current_end_fragment, current_lod,
                                     num_chunks))
                         else:
                             results.append(
                                 dask.delayed(generate_mesh_decomposition)(
-                                    mesh_path, lod_0_box_size,
+                                    mesh_path, lod_0_box_size, grid_origin,
                                     current_start_fragment,
                                     current_end_fragment, current_lod,
                                     num_chunks))
@@ -392,8 +401,8 @@ def generate_neuroglancer_multires_mesh(output_path, num_workers, id, lods,
             del decomposition_results
 
             mesh_util.write_mesh_files(
-                f"{output_path}/multires", f"{id}", fragments, current_lod,
-                lods[:idx + 1],
+                f"{output_path}/multires", f"{id}", grid_origin, fragments,
+                current_lod, lods[:idx + 1],
                 np.asarray([lod_0_box_size, lod_0_box_size, lod_0_box_size]))
 
             del fragments

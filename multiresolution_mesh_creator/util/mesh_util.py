@@ -316,11 +316,13 @@ def write_segment_properties_file(path):
         json.dump(info, f)
 
 
-def write_index_file(path, fragments, current_lod, lods, chunk_shape):
+def write_index_file(path, grid_origin, fragments, current_lod, lods,
+                     chunk_shape):
     """Write the index files for a mesh.
 
     Args:
         path: Path to mesh
+        grid_origin: The lod 0 mesh grid origin
         fragments: Fragments for current lod
         current_lod: The current lod
         lods: A list of all the lods
@@ -330,7 +332,6 @@ def write_index_file(path, fragments, current_lod, lods, chunk_shape):
     # since we don't know if the lowest res ones will have meshes for all svs
     lods = [lod for lod in lods if lod <= current_lod]
 
-    grid_origin = np.zeros(3)
     num_lods = len(lods)
     lod_scales = np.array([2**i for i in range(num_lods)])
     vertex_offsets = np.array([[0., 0., 0.] for _ in range(num_lods)])
@@ -375,13 +376,14 @@ def write_mesh_file(path, fragments):
     return fragments
 
 
-def write_mesh_files(mesh_directory, object_id, fragments, current_lod, lods,
-                     chunk_shape):
+def write_mesh_files(mesh_directory, object_id, grid_origin, fragments,
+                     current_lod, lods, chunk_shape):
     """Write out all relevant mesh files.
 
     Args:
         mesh_directory: Path to mesh directory
         object_id: Mesh id
+        grid_origin: The lod 0 mesh grid origin
         fragments: Current lod fragments
         current_lod: The current lod
         lods: List of all lods
@@ -393,4 +395,5 @@ def write_mesh_files(mesh_directory, object_id, fragments, current_lod, lods,
         # If len(fragments) == 0, that means that the mesh has been reduced to nothing after draco compression
         fragments = zorder_fragments(fragments)
         fragments = write_mesh_file(path, fragments)
-        write_index_file(path, fragments, current_lod, lods, chunk_shape)
+        write_index_file(path, grid_origin, fragments, current_lod, lods,
+                         chunk_shape)

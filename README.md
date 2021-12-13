@@ -1,4 +1,6 @@
 # Multiresolution Mesh Creator
+![Demo](recording/recording.gif)
+
 This repository is meant to be used to create multiresolution meshes in the [neuroglancer precomputed format](https://github.com/google/neuroglancer/blob/master/src/neuroglancer/datasource/precomputed/meshes.md), inspired by [this comment](https://github.com/google/neuroglancer/issues/272#issuecomment-752212014) in order to be used with [neuroglancer](https://github.com/google/neuroglancer). It uses [Dask](https://dask.org/) to parallelize the mesh generation, allowing for progress to be monitored via eg. http://localhost:8787/status.
 
 ## Installation
@@ -124,7 +126,7 @@ INFO:2021/11/08 12:16:45: Deleting decimated meshes completed in 0.1224555969238
 INFO:2021/11/08 12:16:45: Complete! Elapsed time: 13.888124704360962
 ```
 
-The multiresolution meshes will be in `test_mehes_output/multires/`. You can use something like [http-server](https://www.npmjs.com/package/http-server) to serve up that directory for viewing in neuroglancer. See the demo below to see the results of running the above command.
+The multiresolution meshes will be in `test_mehes_output/multires/`. You can use something like [http-server](https://www.npmjs.com/package/http-server) to serve up that directory for viewing in neuroglancer. See the gif at the start of this page to see the results of running the above command.
 
 To run this on eg. an LSF cluster with 40 workers, you would do something like this:
 ```
@@ -134,7 +136,5 @@ bsub -n 2 -P your_project_name create-multiresolution-meshes lsf-config -n 40
 Where the bsub command is used to set up your job to run on the cluster, with eg. 2 cores for the dask driver. `create-multiresolution-meshes` then sets up the dask cluster on the LSF cluster using those drivers.
 
 To run on new meshes, just change the `run-config.yaml` file as desired, and to change dask settings, change `dask-config.yaml` as desired.
-
-![Demo](recording/recording.gif)
 
 
