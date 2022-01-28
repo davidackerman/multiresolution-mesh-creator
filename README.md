@@ -52,7 +52,7 @@ This code assumes that you have either:
 
 To create the multiresolution mesh format required by neuroglancer, you can run `create-multiresolution-meshes`:
 ```
-$: create_multiresolution_meshes --help
+$: create-multiresolution-meshes --help
 usage: create-multiresolution-meshes [-h] [--num-workers NUM_WORKERS]
                                      config_path
 
@@ -70,7 +70,7 @@ optional arguments:
                         launched with a single bsub command)
 ```
 
-`create_multiresolution_meshes` takes in two arguments: a path to a config directory, and the number of desired dask workers.
+`create-multiresolution-meshes` takes in two arguments: a path to a config directory, and the number of desired dask workers.
 
 Example config directories for multiresolution mesh creation of the `test_meshes` can be found in `local-config` and `lsf-config`; these show how you could set run locally or on eg. an LSF cluster. The config directory must contain a `run-config.yaml` file - used to configure the decimation and multiresolution creation, and a `dask-config.yaml` file - used to configure dask itself.
 
