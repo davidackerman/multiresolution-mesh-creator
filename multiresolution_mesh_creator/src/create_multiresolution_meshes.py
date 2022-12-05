@@ -103,10 +103,7 @@ def generate_mesh_decomposition(mesh_path, lod_0_box_size, grid_origin,
     # faces we get this issue about concurrent futures:
     # https://github.com/dask/distributed/issues/4612
 
-    mesh = trimesh.load(mesh_path)
-    vertices = mesh.vertices
-    faces = mesh.faces
-    del mesh
+    vertices, faces = mesh_util.mesh_loader(mesh_path)
 
     combined_fragments_dictionary = {}
     fragments = []

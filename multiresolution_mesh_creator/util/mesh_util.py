@@ -91,8 +91,10 @@ def mesh_loader(filepath):
         vertices, faces = _load_ngmesh(filepath)
     else:
         mesh = trimesh.load(filepath)
-        vertices = mesh.vertices
-        faces = mesh.faces
+        vertices = mesh.vertices.copy()
+        faces = mesh.faces.copy()
+
+        del mesh
 
     return vertices, faces
 
