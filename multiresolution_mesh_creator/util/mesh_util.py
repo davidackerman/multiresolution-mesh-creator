@@ -338,7 +338,10 @@ def write_index_file(path, grid_origin, fragments, current_lod, lods,
     lod_scales = np.array([2**i for i in range(num_lods)])
     vertex_offsets = np.array([[0., 0., 0.] for _ in range(num_lods)])
     num_fragments_per_lod = np.array([len(fragments)])
-    if current_lod == lods[0]:  # then is highest res lod
+    if current_lod == lods[0] or not os.path.exists(f"{path}.index"):  
+        # then is highest res lod or if the file doesnt exist yet it failed
+        # to write out the index file because s0 was draco compressed to nothing 
+        # in encode_faces_to_custom_drc_bytes due to voxel size and chunk shape
 
         with open(f"{path}.index", 'wb') as f:
             f.write(chunk_shape.astype('<f').tobytes())
