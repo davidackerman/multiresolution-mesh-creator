@@ -312,98 +312,100 @@ def generate_neuroglancer_multires_mesh(output_path, num_workers, id, lods,
 
             vertices, _ = mesh_util.mesh_loader(mesh_path)
 
-            if current_lod == 0:
-                max_box_size = lod_0_box_size * 2**lods[-1]
-                grid_origin = (vertices.min(axis=0) // max_box_size -
-                               1) * max_box_size
-            vertices -= grid_origin
+            if vertices is not None:
 
-            current_box_size = lod_0_box_size * 2**current_lod
-            start_fragment = np.maximum(
-                vertices.min(axis=0) // current_box_size - 1,
-                np.array([0, 0, 0])).astype(int)
-            end_fragment = (vertices.max(axis=0) // current_box_size +
-                            1).astype(int)
+                if current_lod == 0:
+                    max_box_size = lod_0_box_size * 2**lods[-1]
+                    grid_origin = (vertices.min(axis=0) // max_box_size -
+                                1) * max_box_size
+                vertices -= grid_origin
 
-            del vertices
+                current_box_size = lod_0_box_size * 2**current_lod
+                start_fragment = np.maximum(
+                    vertices.min(axis=0) // current_box_size - 1,
+                    np.array([0, 0, 0])).astype(int)
+                end_fragment = (vertices.max(axis=0) // current_box_size +
+                                1).astype(int)
 
-            # Want to divide the mesh up into upto num_workers chunks. We do
-            # that by first subdividing the largest dimension as much as
-            # possible, followed by the next largest dimension etc so long
-            # as we don't exceed num_workers slices. If we instead slice each
-            # dimension once, before slicing any dimension twice etc, it would
-            # increase the number of mesh slice operations we perform, which
-            # seems slow.
+                del vertices
 
-            max_number_of_chunks = (end_fragment - start_fragment)
-            dimensions_sorted = np.argsort(-max_number_of_chunks)
-            num_chunks = np.array([1, 1, 1])
+                # Want to divide the mesh up into upto num_workers chunks. We do
+                # that by first subdividing the largest dimension as much as
+                # possible, followed by the next largest dimension etc so long
+                # as we don't exceed num_workers slices. If we instead slice each
+                # dimension once, before slicing any dimension twice etc, it would
+                # increase the number of mesh slice operations we perform, which
+                # seems slow.
 
-            for _ in range(num_workers + 1):
-                for d in dimensions_sorted:
-                    if num_chunks[d] < max_number_of_chunks[d]:
-                        num_chunks[d] += 1
-                        if np.prod(num_chunks) > num_workers:
-                            num_chunks[d] -= 1
-                        break
+                max_number_of_chunks = (end_fragment - start_fragment)
+                dimensions_sorted = np.argsort(-max_number_of_chunks)
+                num_chunks = np.array([1, 1, 1])
 
-            stride = np.ceil(1.0 * (end_fragment - start_fragment) /
-                             num_chunks).astype(np.int)
+                for _ in range(num_workers + 1):
+                    for d in dimensions_sorted:
+                        if num_chunks[d] < max_number_of_chunks[d]:
+                            num_chunks[d] += 1
+                            if np.prod(num_chunks) > num_workers:
+                                num_chunks[d] -= 1
+                            break
 
-            # Scattering here, unless broadcast=True, causes this issue:
-            # https://github.com/dask/distributed/issues/4612. But that is
-            # slow so we are currently electing to read the meshes each time
-            # within generate_mesh_decomposition.
-            # vertices_to_send = client.scatter(vertices, broadcast=True)
-            # faces_to_send = client.scatter(faces, broadcast=True)
+                stride = np.ceil(1.0 * (end_fragment - start_fragment) /
+                                num_chunks).astype(np.int)
 
-            decomposition_results = []
-            for x in range(start_fragment[0], end_fragment[0], stride[0]):
-                for y in range(start_fragment[1], end_fragment[1], stride[1]):
-                    for z in range(start_fragment[2], end_fragment[2],
-                                   stride[2]):
-                        current_start_fragment = np.array([x, y, z])
-                        current_end_fragment = current_start_fragment + stride
-                        if num_workers == 1:
-                            # then we aren't parallelizing again
-                            decomposition_results.append(
-                                generate_mesh_decomposition(
-                                    mesh_path, lod_0_box_size, grid_origin,
-                                    current_start_fragment,
-                                    current_end_fragment, current_lod,
-                                    num_chunks))
-                        else:
-                            results.append(
-                                dask.delayed(generate_mesh_decomposition)(
-                                    mesh_path, lod_0_box_size, grid_origin,
-                                    current_start_fragment,
-                                    current_end_fragment, current_lod,
-                                    num_chunks))
+                # Scattering here, unless broadcast=True, causes this issue:
+                # https://github.com/dask/distributed/issues/4612. But that is
+                # slow so we are currently electing to read the meshes each time
+                # within generate_mesh_decomposition.
+                # vertices_to_send = client.scatter(vertices, broadcast=True)
+                # faces_to_send = client.scatter(faces, broadcast=True)
 
-            if num_workers > 1:
-                client.rebalance()
-                decomposition_results = dask.compute(*results)
+                decomposition_results = []
+                for x in range(start_fragment[0], end_fragment[0], stride[0]):
+                    for y in range(start_fragment[1], end_fragment[1], stride[1]):
+                        for z in range(start_fragment[2], end_fragment[2],
+                                    stride[2]):
+                            current_start_fragment = np.array([x, y, z])
+                            current_end_fragment = current_start_fragment + stride
+                            if num_workers == 1:
+                                # then we aren't parallelizing again
+                                decomposition_results.append(
+                                    generate_mesh_decomposition(
+                                        mesh_path, lod_0_box_size, grid_origin,
+                                        current_start_fragment,
+                                        current_end_fragment, current_lod,
+                                        num_chunks))
+                            else:
+                                results.append(
+                                    dask.delayed(generate_mesh_decomposition)(
+                                        mesh_path, lod_0_box_size, grid_origin,
+                                        current_start_fragment,
+                                        current_end_fragment, current_lod,
+                                        num_chunks))
 
-            results = []
+                if num_workers > 1:
+                    client.rebalance()
+                    decomposition_results = dask.compute(*results)
 
-            # Remove empty slabs
-            decomposition_results = [
-                fragments for fragments in decomposition_results if fragments
-            ]
+                results = []
 
-            fragments = [
-                fragment for fragments in decomposition_results
-                for fragment in fragments
-            ]
+                # Remove empty slabs
+                decomposition_results = [
+                    fragments for fragments in decomposition_results if fragments
+                ]
 
-            del decomposition_results
+                fragments = [
+                    fragment for fragments in decomposition_results
+                    for fragment in fragments
+                ]
 
-            mesh_util.write_mesh_files(
-                f"{output_path}/multires", f"{id}", grid_origin, fragments,
-                current_lod, lods[:idx + 1],
-                np.asarray([lod_0_box_size, lod_0_box_size, lod_0_box_size]))
+                del decomposition_results
 
-            del fragments
+                mesh_util.write_mesh_files(
+                    f"{output_path}/multires", f"{id}", grid_origin, fragments,
+                    current_lod, lods[:idx + 1],
+                    np.asarray([lod_0_box_size, lod_0_box_size, lod_0_box_size]))
+
+                del fragments
 
 
 def generate_all_neuroglancer_multires_meshes(output_path, num_workers, ids,

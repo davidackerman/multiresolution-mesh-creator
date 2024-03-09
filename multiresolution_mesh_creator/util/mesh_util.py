@@ -85,15 +85,18 @@ def mesh_loader(filepath):
         faces = faces.reshape(-1, 3)
 
         return vertices, faces
-
+    
+    vertices = None
+    faces = None
+    
     _, ext = os.path.splitext(filepath)
     if ext == "" or ext == ".ngmesh" or ext == ".ng":
         vertices, faces = _load_ngmesh(filepath)
     else:
         mesh = trimesh.load(filepath)
-        vertices = mesh.vertices.copy()
-        faces = mesh.faces.copy()
-
+        if hasattr(mesh, "vertices"):
+            vertices = mesh.vertices.copy()
+            faces = mesh.faces.copy()
         del mesh
 
     return vertices, faces
