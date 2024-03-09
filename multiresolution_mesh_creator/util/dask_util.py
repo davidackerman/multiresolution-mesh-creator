@@ -115,6 +115,7 @@ def setup_execution_directory(config_path, logger):
 
     # Create execution dir (copy of template dir) and make it the CWD
     # from flyemflows: https://github.com/janelia-flyem/flyemflows/blob/master/flyemflows/bin/launchflow.py
+    config_path = config_path[:-1] if config_path[-1] == "/" else config_path
     timestamp = f'{datetime.now():%Y%m%d.%H%M%S}'
     execution_dir = f'{config_path}-{timestamp}'
     execution_dir = os.path.abspath(execution_dir)
