@@ -23,6 +23,8 @@ dependencies:
   - blas=1.0=openblas
   - bleach=4.1.0=pyhd8ed1ab_0
   - bokeh=2.3.3=py37h06a4308_0
+  - boost=1.70.0=py37h9de70de_1
+  - boost-cpp=1.70.0=ha2d47e9_1
   - bottleneck=1.3.2=py37heb32a55_1
   - brotlipy=0.7.0=py37h27cfd23_1003
   - bzip2=1.0.8=h7f98852_4
