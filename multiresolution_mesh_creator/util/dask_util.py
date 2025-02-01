@@ -24,8 +24,7 @@ def set_local_directory(cluster_type):
     # From https://github.com/janelia-flyem/flyemflows/blob/master/flyemflows/util/dask_util.py
     # This specifies where dask workers will dump cached data
 
-    local_dir = dask.config.get(f"jobqueue.{cluster_type}.local-directory",
-                                None)
+    local_dir = dask.config.get(f"jobqueue.{cluster_type}.local-directory", None)
     if local_dir:
         return
 
@@ -38,14 +37,13 @@ def set_local_directory(cluster_type):
             continue
         else:
             local_dir = d
-            dask.config.set(
-                {f"jobqueue.{cluster_type}.local-directory": local_dir})
+            dask.config.set({f"jobqueue.{cluster_type}.local-directory": local_dir})
 
             # Set tempdir, too.
             tempfile.tempdir = local_dir
 
             # Forked processes will use this for tempfile.tempdir
-            os.environ['TMPDIR'] = local_dir
+            os.environ["TMPDIR"] = local_dir
             break
 
     if local_dir is None:
@@ -71,30 +69,32 @@ def start_dask(num_workers, msg, logger):
     with open("dask-config.yaml") as f:
         config = yaml.load(f, Loader=SafeLoader)
         dask.config.update(dask.config.config, config)
-
-    cluster_type = next(iter(dask.config.config['jobqueue']))
+    cluster_type = next(iter(config["jobqueue"]))
     set_local_directory(cluster_type)
-
-    if cluster_type == 'local':
+    if cluster_type == "local":
         from dask.distributed import LocalCluster
+
         cluster = LocalCluster(n_workers=num_workers, threads_per_worker=1)
     else:
-        if cluster_type == 'lsf':
+        if cluster_type == "lsf":
             from dask_jobqueue import LSFCluster
+
             cluster = LSFCluster()
-        elif cluster_type == 'slurm':
+        elif cluster_type == "slurm":
             from dask_jobqueue import SLURMCluster
+
             cluster = SLURMCluster()
-        elif cluster_type == 'sge':
+        elif cluster_type == "sge":
             from dask_jobqueue import SGECluster
+
             cluster = SGECluster()
         cluster.scale(num_workers)
     try:
-        with io_util.Timing_Messager(f"Starting dask cluster for {msg}",
-                                     logger):
+        with io_util.Timing_Messager(f"Starting dask cluster for {msg}", logger):
             client = Client(cluster)
         io_util.print_with_datetime(
-            f"Check {client.cluster.dashboard_link} for {msg} status.", logger)
+            f"Check {client.cluster.dashboard_link} for {msg} status.", logger
+        )
         yield client
     finally:
         client.shutdown()
@@ -116,12 +116,11 @@ def setup_execution_directory(config_path, logger):
     # Create execution dir (copy of template dir) and make it the CWD
     # from flyemflows: https://github.com/janelia-flyem/flyemflows/blob/master/flyemflows/bin/launchflow.py
     config_path = config_path[:-1] if config_path[-1] == "/" else config_path
-    timestamp = f'{datetime.now():%Y%m%d.%H%M%S}'
-    execution_dir = f'{config_path}-{timestamp}'
+    timestamp = f"{datetime.now():%Y%m%d.%H%M%S}"
+    execution_dir = f"{config_path}-{timestamp}"
     execution_dir = os.path.abspath(execution_dir)
     shutil.copytree(config_path, execution_dir, symlinks=True)
-    os.chmod(f'{execution_dir}/run-config.yaml', 0o444)  # read-only
-    io_util.print_with_datetime(f"Setup working directory as {execution_dir}.",
-                                logger)
+    os.chmod(f"{execution_dir}/run-config.yaml", 0o444)  # read-only
+    io_util.print_with_datetime(f"Setup working directory as {execution_dir}.", logger)
 
     return execution_dir
