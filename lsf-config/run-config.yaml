@@ -2,10 +2,10 @@ required_settings:
         input_path: ../test_meshes           # Path to lod 0 meshes or multiscale meshes
         output_path: ../test_meshes_output   # Path to write out multires meshes
         num_lods: 6                          # Number of levels of detail
-        box_size: 4                          # lod 0 box size
 
 
 optional_decimation_settings:
+        box_size: 4                    # lod 0 box size in nm; default is determined based on a guesstimate of a good number of faces per lod 0 chunk
         skip_decimation: False         # Skip mesh decimation if meshes exist; default is False
         decimation_factor: 4           # Factor by which to decimate faces at each lod, ie factor**lod; default is 2
         aggressiveness: 10             # Aggressiveness to be used for decimation; default is 7
