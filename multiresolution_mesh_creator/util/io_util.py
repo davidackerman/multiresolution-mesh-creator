@@ -78,6 +78,8 @@ def read_run_config(config_path):
         optional_decimation_settings = config.get(
             "optional_decimation_settings", {})
 
+        if "box_size" not in optional_decimation_settings:
+            optional_decimation_settings["box_size"] = None
         if "skip_decimation" not in optional_decimation_settings:
             optional_decimation_settings["skip_decimation"] = False
         if "decimation_factor" not in optional_decimation_settings:

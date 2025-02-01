@@ -300,7 +300,7 @@ def generate_decimated_meshes(
 
 
 def generate_neuroglancer_multires_mesh(
-    output_path, num_workers, id, lods, original_ext, lod_0_box_size
+    output_path, num_workers, id, lods, original_ext, lod_0_box_size = None
 ):
     """Dask delayed function to generate multiresolution mesh in neuroglancer
     mesh format using prewritten meshes at different levels of detail.
@@ -329,19 +329,39 @@ def generate_neuroglancer_multires_mesh(
             f"rm -rf {output_path}/multires/{id} {output_path}/multires/{id}.index"
         )
 
-        # get grid origin which will be minimum vertex position
+        # get grid origin and determine lod0 chunk size which will be minimum vertex position
         grid_origin = np.ones(3) * np.inf
-        for current_lod in lods:
+        previous_num_faces = np.inf
+        for idx,current_lod in enumerate(lods):
             if current_lod == 0:
                 mesh_path = f"{output_path}/mesh_lods/s{current_lod}/{id}{original_ext}"
             else:
                 mesh_path = f"{output_path}/mesh_lods/s{current_lod}/{id}.ply"
 
-            vertices, _ = mesh_util.mesh_loader(mesh_path)
+            vertices, faces = mesh_util.mesh_loader(mesh_path)
+            num_faces = len(faces)
+            if num_faces >= previous_num_faces:
+                break
             if vertices is not None:
                 grid_origin = np.minimum(
                     grid_origin, np.floor(vertices.min(axis=0) - 1)
                 )  # subtract 1 in case of rounding issues
+            
+            if not lod_0_box_size and current_lod == 0:
+                max_distance_between_vertices = np.ceil(
+                    np.max(vertices.max(axis=0) - vertices.min(axis=0))
+                )
+                # arbitrarily say around 100 faces per chunk
+                heuristic_num_chunks = np.ceil(num_faces/100)
+                if heuristic_num_chunks==1:
+                    lod_0_box_size = np.ceil(max_distance_between_vertices)+1              
+                else:
+                    lod_0_box_size = np.ceil(max_distance_between_vertices/np.ceil(heuristic_num_chunks**(1/2)))+1 # use square root rather than cube root since assuming surface area to volume ratio
+            
+            previous_num_faces = num_faces
+        
+        # only need as many lods until mesh stops decimating
+        lods = lods[:idx]
 
         results = []
         for idx, current_lod in enumerate(lods):
@@ -461,7 +481,7 @@ def generate_neuroglancer_multires_mesh(
 
 
 def generate_all_neuroglancer_multires_meshes(
-    output_path, num_workers, ids, lods, original_ext, lod_0_box_size
+    output_path, num_workers, ids, lods, original_ext, lod_0_box_size=None
 ):
     """Generate all neuroglancer multiresolution meshes for `ids`. Calls dask
     delayed function `generate_neuroglancer_multires_mesh` for each id.
@@ -529,8 +549,8 @@ def main():
     input_path = required_settings["input_path"]
     output_path = required_settings["output_path"]
     num_lods = required_settings["num_lods"]
-    lod_0_box_size = required_settings["box_size"]
 
+    lod_0_box_size = optional_decimation_settings["box_size"]
     skip_decimation = optional_decimation_settings["skip_decimation"]
     decimation_factor = optional_decimation_settings["decimation_factor"]
     aggressiveness = optional_decimation_settings["aggressiveness"]
