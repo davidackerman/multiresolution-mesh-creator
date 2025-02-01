@@ -329,6 +329,20 @@ def generate_neuroglancer_multires_mesh(
             f"rm -rf {output_path}/multires/{id} {output_path}/multires/{id}.index"
         )
 
+        # get grid origin which will be minimum vertex position
+        grid_origin = np.ones(3) * np.inf
+        for current_lod in lods:
+            if current_lod == 0:
+                mesh_path = f"{output_path}/mesh_lods/s{current_lod}/{id}{original_ext}"
+            else:
+                mesh_path = f"{output_path}/mesh_lods/s{current_lod}/{id}.ply"
+
+            vertices, _ = mesh_util.mesh_loader(mesh_path)
+            if vertices is not None:
+                grid_origin = np.minimum(
+                    grid_origin, np.floor(vertices.min(axis=0) - 1)
+                )  # subtract 1 in case of rounding issues
+
         results = []
         for idx, current_lod in enumerate(lods):
             if current_lod == 0:
@@ -339,15 +353,11 @@ def generate_neuroglancer_multires_mesh(
             vertices, _ = mesh_util.mesh_loader(mesh_path)
 
             if vertices is not None:
-
-                if current_lod == 0:
-                    max_box_size = lod_0_box_size * 2 ** lods[-1]
-                    grid_origin = (vertices.min(axis=0) // max_box_size) * max_box_size
                 vertices -= grid_origin
 
                 current_box_size = lod_0_box_size * 2**current_lod
                 start_fragment = np.maximum(
-                    vertices.min(axis=0) // current_box_size - 1, np.array([0, 0, 0])
+                    vertices.min(axis=0) // current_box_size, np.array([0, 0, 0])
                 ).astype(int)
                 end_fragment = (vertices.max(axis=0) // current_box_size + 1).astype(
                     int
