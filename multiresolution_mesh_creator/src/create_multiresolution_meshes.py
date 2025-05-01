@@ -2,7 +2,6 @@ from contextlib import ExitStack
 import trimesh
 from trimesh.intersections import slice_faces_plane
 import numpy as np
-from dvidutils import encode_faces_to_custom_drc_bytes
 import time
 import os
 from os import listdir
@@ -10,8 +9,9 @@ from os.path import isfile, join, splitext
 import dask
 from dask.distributed import worker_client
 import pyfqmr
-from ..util import mesh_util, io_util, dask_util
+from multiresolution_mesh_creator.util import mesh_util, io_util, dask_util
 import logging
+import DracoPy
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +32,7 @@ def my_slice_faces_plane(vertices, faces, plane_normal, plane_origin):
 
     if len(vertices) > 0 and len(faces) > 0:
         try:
-            vertices, faces = slice_faces_plane(
+            vertices, faces, _ = slice_faces_plane(
                 vertices, faces, plane_normal, plane_origin
             )
         except ValueError as e:
@@ -192,16 +192,24 @@ def generate_mesh_decomposition(
     # Return combined_fragments_dictionary
     for fragment_pos, fragment in combined_fragments_dictionary.items():
         current_box_size = lod_0_box_size * 2**current_lod
-        draco_bytes = encode_faces_to_custom_drc_bytes(
-            fragment.vertices,
-            np.zeros(np.shape(fragment.vertices)),
-            fragment.faces,
-            np.asarray(3 * [current_box_size]),
-            np.asarray(fragment_pos) * current_box_size,
-            position_quantization_bits=10,
-        )
 
-        if len(draco_bytes) > 12:
+        if len(fragment.vertices) > 0:
+            quantization_origin = np.asarray(fragment_pos) * current_box_size
+            draco_bytes = DracoPy.encode(
+                points=fragment.vertices,
+                faces=fragment.faces,
+                quantization_bits=10,
+                quantization_range=current_box_size,
+                quantization_origin=quantization_origin,
+            )
+            # TODO: check if len(draco_bytes) > 12 and len(fragment.vertices) > 0 are
+            # equivalent; if not the user may incur in this warning for small meshes
+            if not len(draco_bytes) > 12:
+                print(
+                    'Warning: Draco bytes are less than 12 bytes. This may be due to a '
+                    'small mesh. Skipping this mesh.'
+                )
+                continue
             # Then the mesh is not empty
             fragment = mesh_util.CompressedFragment(
                 draco_bytes,
@@ -346,7 +354,7 @@ def generate_neuroglancer_multires_mesh(
                 grid_origin = np.minimum(
                     grid_origin, np.floor(vertices.min(axis=0) - 1)
                 )  # subtract 1 in case of rounding issues
-            
+
             if not lod_0_box_size and current_lod == 0:
                 max_distance_between_vertices = np.ceil(
                     np.max(vertices.max(axis=0) - vertices.min(axis=0))
@@ -354,12 +362,12 @@ def generate_neuroglancer_multires_mesh(
                 # arbitrarily say around 100 faces per chunk
                 heuristic_num_chunks = np.ceil(num_faces/100)
                 if heuristic_num_chunks==1:
-                    lod_0_box_size = np.ceil(max_distance_between_vertices)+1              
+                    lod_0_box_size = np.ceil(max_distance_between_vertices)+1
                 else:
                     lod_0_box_size = np.ceil(max_distance_between_vertices/np.ceil(heuristic_num_chunks**(1/2)))+1 # use square root rather than cube root since assuming surface area to volume ratio
-            
+
             previous_num_faces = num_faces
-        
+
         # only need as many lods until mesh stops decimating
         lods = lods[:idx]
 
@@ -407,7 +415,7 @@ def generate_neuroglancer_multires_mesh(
 
                 stride = np.ceil(
                     1.0 * (end_fragment - start_fragment) / num_chunks
-                ).astype(np.int)
+                ).astype(int)
 
                 # Scattering here, unless broadcast=True, causes this issue:
                 # https://github.com/dask/distributed/issues/4612. But that is
@@ -502,7 +510,7 @@ def generate_all_neuroglancer_multires_meshes(
         # lots of small objects are present
 
         total_file_size = 0
-        file_sizes = np.zeros((len(ids),), dtype=np.int)
+        file_sizes = np.zeros((len(ids),), dtype=int)
         for idx, id in enumerate(ids):
             current_size = os.stat(
                 f"{output_path}/mesh_lods/s0/{id}{original_ext}"
@@ -511,7 +519,7 @@ def generate_all_neuroglancer_multires_meshes(
             file_sizes[idx] = current_size
 
         num_workers_per_byte = num_workers / total_file_size
-        num_subtask_workers = np.ceil(file_sizes * num_workers_per_byte).astype(np.int)
+        num_subtask_workers = np.ceil(file_sizes * num_workers_per_byte).astype(int)
         return num_subtask_workers
 
     num_subtask_workers = get_number_of_subtask_workers(

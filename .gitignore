@@ -24,3 +24,7 @@ lsf-config-*
 lsf-config_*
 local-config-*
 local-config_*
+
+# pixi environments
+.pixi
+*.egg-info

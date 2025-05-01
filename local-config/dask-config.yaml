@@ -21,10 +21,10 @@ distributed:
 
   worker:
     memory:
-      target: 0.0
-      spill: 0.0
-      pause: 0.0
-      terminate: 0.0
+      target: 0.6
+      spill: 0.7
+      pause: 0.8
+      terminate: 0.95
 
   admin:
     log-format: '[%(asctime)s] %(levelname)s %(message)s'
