@@ -36,7 +36,7 @@ pyfqmr = ">=0.3.0,<0.4"
 
 [tool.pixi.tasks]
 help = "create-multiresolution-meshes --help"
-demo-create-meshes-local = "create-multiresolution-meshes local-config -n 1"
+demo-local = "create-multiresolution-meshes local-config -n 1"
 
 [tool.pixi.environments]
 view = ["neuroglancer"]
