@@ -9,7 +9,6 @@ classifiers = [
     "Programming Language :: Python :: 3"
 ]
 requires-python = ">= 3.12"
-dependencies = ["dracopy>=1.5.0,<2"]
 
 [project.scripts]
 create-multiresolution-meshes = "multiresolution_mesh_creator.src.create_multiresolution_meshes:main"
@@ -23,31 +22,17 @@ build-backend = "setuptools.build_meta"
 
 [tool.pixi.workspace]
 name = "multiresolution-mesh-creator"
-# if you want to use dvidutils instead of draco, uncomment after https://github.com/janelia-flyem/dvidutils/pull/2
-# is merged and the new release of dvidutils is available on conda-forge
-# current release: https://anaconda.org/flyem-forge/dvidutils
-# channels = ["flyem-forge", "conda-forge"]
 channels = ["conda-forge"]
 platforms = ["osx-arm64"]
-# failed attempt to build the conda recipe locally
-# preview = ["pixi-build"]
 
 [tool.pixi.pypi-dependencies]
 multiresolution-mesh-creator = { path = ".", editable = true }
+dracopy = ">=1.5.0,<2"
 
 [tool.pixi.dependencies]
 trimesh = ">=4.6.8,<5"
-# didn't work (couldn't build the conda recipe locally)
-# dvidutils = { path = "dvidutils/conda-recipe" }
-# this works instead, but the version we need is not available on conda-forge
-#dvidutils = "*"
 dask = ">=2025.4.1,<2026"
 pyfqmr = ">=0.3.0,<0.4"
-
-[tool.pixi.build-dependencies]
-cmake = ">=4.0.1,<5"
-pybind11 = ">=2.13.6,<3"
-xtensor = ">=0.26.0,<0.27"
 
 [tool.pixi.tasks]
 help = "create-multiresolution-meshes --help"
