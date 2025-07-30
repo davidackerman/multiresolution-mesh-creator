@@ -1,7 +1,7 @@
 from contextlib import contextmanager
 import os
 import dask
-from dask.distributed import Client
+from dask.distributed import Client, wait
 import getpass
 import tempfile
 import shutil
@@ -9,6 +9,8 @@ import multiresolution_mesh_creator.util.io_util as io_util
 from datetime import datetime
 import yaml
 from yaml.loader import SafeLoader
+import dask.bag as db
+import numpy as np
 
 
 def set_local_directory(cluster_type):
@@ -68,8 +70,10 @@ def start_dask(num_workers, msg, logger):
     # Update dask
     with open("dask-config.yaml") as f:
         config = yaml.load(f, Loader=SafeLoader)
-        dask.config.update(dask.config.config, config)
+
     cluster_type = next(iter(config["jobqueue"]))
+    dask.config.update(dask.config.config, config)
+
     set_local_directory(cluster_type)
     if cluster_type == "local":
         from dask.distributed import LocalCluster
@@ -92,6 +96,12 @@ def start_dask(num_workers, msg, logger):
     try:
         with io_util.Timing_Messager(f"Starting dask cluster for {msg}", logger):
             client = Client(cluster)
+            try:
+                client.wait_for_workers(num_workers, timeout=300)
+            except TimeoutError:
+                # only X workers got scheduled in 30s—move on with them
+                pass
+
         io_util.print_with_datetime(
             f"Check {client.cluster.dashboard_link} for {msg} status.", logger
         )
@@ -124,3 +134,47 @@ def setup_execution_directory(config_path, logger):
     io_util.print_with_datetime(f"Setup working directory as {execution_dir}.", logger)
 
     return execution_dir
+
+
+def guesstimate_npartitions(elements, num_workers, scaling=4):
+    if not isinstance(elements, int):
+        elements = len(elements)
+    approximate_npartitions = min(elements, num_workers * scaling)
+    elements_per_worker = elements // approximate_npartitions
+    actual_partitions = elements // elements_per_worker
+    return actual_partitions
+
+
+def compute_bag(fn, memmap_file_path, variable_args_list, fixed_args_list, num_workers):
+    np.save(memmap_file_path, variable_args_list)
+
+    def partition_worker(indices, path, *fixed):
+        arr = np.load(path, mmap_mode="r")  # open once per partition
+        for i in indices:
+            fn(*arr[i], *fixed)
+        # Dask expects to return an iterable
+        return []
+
+    bag = db.range(
+        len(variable_args_list),
+        npartitions=guesstimate_npartitions(variable_args_list, num_workers),
+    )
+
+    try:
+        bag = bag.map_partitions(partition_worker, memmap_file_path, *fixed_args_list)
+        futures = bag.persist()
+
+        [completed, _] = wait(futures)
+        failed = [f for f in completed if f.exception() is not None]
+
+        # cancel so errors from shutdown don't propagate
+        for completed_future in completed:
+            completed_future.cancel()
+
+        if failed:
+            raise RuntimeError(f"Failed to compute {len(failed)} blocks: {failed}")
+    except Exception as e:
+        # Any other Python-level exception your function raised
+        print("Compute raised an exception:", e)
+        raise
+    os.remove(memmap_file_path)
