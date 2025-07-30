@@ -2,7 +2,7 @@ from contextlib import ExitStack
 import trimesh
 from trimesh.intersections import slice_faces_plane
 import numpy as np
-from dvidutils import encode_faces_to_custom_drc_bytes
+import DracoPy
 import time
 import os
 from os import listdir
@@ -32,7 +32,7 @@ def my_slice_faces_plane(vertices, faces, plane_normal, plane_origin):
 
     if len(vertices) > 0 and len(faces) > 0:
         try:
-            vertices, faces = slice_faces_plane(
+            vertices, faces, _ = slice_faces_plane(
                 vertices, faces, plane_normal, plane_origin
             )
         except ValueError as e:
@@ -191,50 +191,55 @@ def generate_mesh_decomposition(
 
     # Return combined_fragments_dictionary
     for fragment_pos, fragment in combined_fragments_dictionary.items():
-        current_box_size = lod_0_box_size * 2**current_lod
-        draco_bytes = encode_faces_to_custom_drc_bytes(
-            fragment.vertices,
-            np.zeros(np.shape(fragment.vertices)),
-            fragment.faces,
-            np.asarray(3 * [current_box_size]),
-            np.asarray(fragment_pos) * current_box_size,
-            position_quantization_bits=10,
-        )
+        try:
+            if len(fragment.vertices) > 0:
+                current_box_size = lod_0_box_size * 2**current_lod
+                quantization_origin = np.asarray(fragment_pos) * current_box_size
+                # Wrap draco output to get error about degenerate triangles
+                draco_bytes, _ = io_util.capture_draco_output(
+                    2,
+                    DracoPy.encode,
+                    points=fragment.vertices,
+                    faces=fragment.faces,
+                    quantization_bits=10,
+                    quantization_range=current_box_size,
+                    quantization_origin=quantization_origin,
+                )
 
-        if len(draco_bytes) > 12:
-            # Then the mesh is not empty
-            fragment = mesh_util.CompressedFragment(
-                draco_bytes,
-                np.asarray(fragment_pos),
-                len(draco_bytes),
-                np.asarray(fragment.lod_0_fragment_pos),
-            )
-            fragments.append(fragment)
+                if len(draco_bytes) > 12:
+                    # Then the mesh is not empty
+                    fragment = mesh_util.CompressedFragment(
+                        draco_bytes,
+                        np.asarray(fragment_pos),
+                        len(draco_bytes),
+                        np.asarray(fragment.lod_0_fragment_pos),
+                    )
+                    fragments.append(fragment)
 
+        except Exception as e:
+            if "All triangles are degenerate" in str(e):
+                # This happens due to quantization of small fragments? TODO: Rather than throw it out, maybe flatten the neighboring edge? Or is that taken care of since all the vertices are identical anyway
+                io_util.print_with_datetime(
+                    f"Skipping degenerate fragment {mesh_path}, {lod_0_box_size}, {grid_origin}, {start_fragment}, {end_fragment}, {current_lod}, {num_chunks} {fragment_pos} with vertices {fragment.vertices} and faces {fragment.faces}",
+                    logger,
+                )
+            else:
+                raise Exception(
+                    f"Error processing fragment {mesh_path},{lod_0_box_size},{grid_origin},{start_fragment},{end_fragment},{current_lod},{num_chunks}: {e}"
+                )
     return fragments
 
 
 def pyfqmr_decimate(
-    input_path, output_path, id, lod, ext, decimation_factor, aggressiveness
+    id,
+    lod,
+    input_path,
+    output_path,
+    ext,
+    decimation_factor,
+    aggressiveness,
 ):
-    """Mesh decimation using pyfqmr.
-
-    Decimation is performed on a mesh located at `input_path`/`id`.`ext`. The
-    target number of faces is 1/2**`lod` of the current number of faces. The
-    mesh is written to an ply file in `output_path`/s`lod`/`id`.ply. This
-    utilizes `dask.delayed`.
-
-    Args:
-        input_path [`str`]: The input path for s0 meshes
-        output_path [`str`]: The output path
-        id [`int`]: The object id
-        lod [`int`]: The current level of detail
-        ext [`str`]: The extension of the s0 meshes.
-        decimation_factor [`float`]: The factor by which we decimate faces,
-                                     scaled by 2**lod
-        aggressiveness [`int`]: Aggressiveness for decimation
-    """
-
+    # id, lod = np.load(id_lod_memmap_path, allow_pickle=True, mmap_mode="r")[memmap_idx]
     vertices, faces = mesh_util.mesh_loader(f"{input_path}/{id}{ext}")
     desired_faces = max(len(faces) // (decimation_factor**lod), 4)
     mesh_simplifier = pyfqmr.Simplify()
@@ -257,7 +262,14 @@ def pyfqmr_decimate(
 
 
 def generate_decimated_meshes(
-    input_path, output_path, lods, ids, ext, decimation_factor, aggressiveness
+    input_path,
+    output_path,
+    lods,
+    ids,
+    ext,
+    decimation_factor,
+    aggressiveness,
+    num_workers,
 ):
     """Generate decimatated meshes for all ids in `ids`, over all lod in `lods`.
 
@@ -270,9 +282,17 @@ def generate_decimated_meshes(
         decimation_fraction [`float`]: The factor by which we decimate faces,
                                        scaled by 2**lod
         aggressiveness [`int`]: Aggressiveness for decimation
+        num_workers (`int`): Number of workers for dask
     """
 
-    results = []
+    variable_args_list = []
+    fixed_args_list = [
+        input_path,
+        f"{output_path}/mesh_lods",
+        ext,
+        decimation_factor,
+        aggressiveness,
+    ]
     for current_lod in lods:
         if current_lod == 0:
             os.makedirs(f"{output_path}/mesh_lods/", exist_ok=True)
@@ -284,43 +304,35 @@ def generate_decimated_meshes(
         else:
             os.makedirs(f"{output_path}/mesh_lods/s{current_lod}", exist_ok=True)
             for id in ids:
-                results.append(
-                    dask.delayed(pyfqmr_decimate)(
-                        input_path,
-                        f"{output_path}/mesh_lods",
+                variable_args_list.append(
+                    (
                         id,
                         current_lod,
-                        ext,
-                        decimation_factor,
-                        aggressiveness,
                     )
                 )
-
-    dask.compute(*results)
+    dask_util.compute_bag(
+        pyfqmr_decimate,
+        f"{output_path}/variable_args_to_decimate.npy",
+        variable_args_list,
+        fixed_args_list,
+        num_workers,
+    )
 
 
 def generate_neuroglancer_multires_mesh(
-    output_path, num_workers, id, lods, original_ext, lod_0_box_size = None
+    id,
+    num_subtask_workers,
+    output_path,
+    lods,
+    original_ext,
+    lod_0_box_size=None,
 ):
-    """Dask delayed function to generate multiresolution mesh in neuroglancer
-    mesh format using prewritten meshes at different levels of detail.
-
-    This function generates the neuroglancer mesh for a single mesh, and
-    parallelizes the mesh creation over `num_workers` by splitting the mesh in
-    the x-direciton into `num_workers` fragments, each of which is sent to a
-    a worker to be further subdivided.
-
-    Args:
-        output_path (`str`): Output path to writeout neuroglancer mesh
-        num_workers (`int`): Number of workers for dask
-        id (`int`): Mesh id
-        lods (`list`): List of levels of detail
-        original_ext (`str`): Original mesh file extension
-        lod_0_box_size (`int`): Box size in lod 0 coordinates
-    """
+    # id, num_subtask_workers = np.load(
+    #     id_num_subtask_workers_memmmap_path, mmap_mode="r"
+    # )[memmap_idx]
 
     with ExitStack() as stack:
-        if num_workers > 1:
+        if num_subtask_workers > 1:
             # Worker client context really slows things down a lot, so only need to do it if we will actually parallelize
             client = stack.enter_context(worker_client())
 
@@ -332,34 +344,44 @@ def generate_neuroglancer_multires_mesh(
         # get grid origin and determine lod0 chunk size which will be minimum vertex position
         grid_origin = np.ones(3) * np.inf
         previous_num_faces = np.inf
-        for idx,current_lod in enumerate(lods):
+        for idx, current_lod in enumerate(lods):
             if current_lod == 0:
                 mesh_path = f"{output_path}/mesh_lods/s{current_lod}/{id}{original_ext}"
             else:
                 mesh_path = f"{output_path}/mesh_lods/s{current_lod}/{id}.ply"
 
             vertices, faces = mesh_util.mesh_loader(mesh_path)
+            if faces is None:
+                break
+
             num_faces = len(faces)
+
             if num_faces >= previous_num_faces:
                 break
             if vertices is not None:
                 grid_origin = np.minimum(
                     grid_origin, np.floor(vertices.min(axis=0) - 1)
                 )  # subtract 1 in case of rounding issues
-            
+
             if not lod_0_box_size and current_lod == 0:
                 max_distance_between_vertices = np.ceil(
                     np.max(vertices.max(axis=0) - vertices.min(axis=0))
                 )
                 # arbitrarily say around 100 faces per chunk
-                heuristic_num_chunks = np.ceil(num_faces/100)
-                if heuristic_num_chunks==1:
-                    lod_0_box_size = np.ceil(max_distance_between_vertices)+1              
+                heuristic_num_chunks = np.ceil(num_faces / 100)
+                if heuristic_num_chunks == 1:
+                    lod_0_box_size = np.ceil(max_distance_between_vertices) + 1
                 else:
-                    lod_0_box_size = np.ceil(max_distance_between_vertices/np.ceil(heuristic_num_chunks**(1/2)))+1 # use square root rather than cube root since assuming surface area to volume ratio
-            
+                    lod_0_box_size = (
+                        np.ceil(
+                            max_distance_between_vertices
+                            / np.ceil(heuristic_num_chunks ** (1 / 2))
+                        )
+                        + 1
+                    )  # use square root rather than cube root since assuming surface area to volume ratio
+
             previous_num_faces = num_faces
-        
+
         # only need as many lods until mesh stops decimating
         lods = lods[:idx]
 
@@ -397,17 +419,17 @@ def generate_neuroglancer_multires_mesh(
                 dimensions_sorted = np.argsort(-max_number_of_chunks)
                 num_chunks = np.array([1, 1, 1])
 
-                for _ in range(num_workers + 1):
+                for _ in range(num_subtask_workers + 1):
                     for d in dimensions_sorted:
                         if num_chunks[d] < max_number_of_chunks[d]:
                             num_chunks[d] += 1
-                            if np.prod(num_chunks) > num_workers:
+                            if np.prod(num_chunks) > num_subtask_workers:
                                 num_chunks[d] -= 1
                             break
 
                 stride = np.ceil(
                     1.0 * (end_fragment - start_fragment) / num_chunks
-                ).astype(np.int)
+                ).astype(int)
 
                 # Scattering here, unless broadcast=True, causes this issue:
                 # https://github.com/dask/distributed/issues/4612. But that is
@@ -422,7 +444,7 @@ def generate_neuroglancer_multires_mesh(
                         for z in range(start_fragment[2], end_fragment[2], stride[2]):
                             current_start_fragment = np.array([x, y, z])
                             current_end_fragment = current_start_fragment + stride
-                            if num_workers == 1:
+                            if num_subtask_workers == 1:
                                 # then we aren't parallelizing again
                                 decomposition_results.append(
                                     generate_mesh_decomposition(
@@ -448,7 +470,7 @@ def generate_neuroglancer_multires_mesh(
                                     )
                                 )
 
-                if num_workers > 1:
+                if num_subtask_workers > 1:
                     client.rebalance()
                     decomposition_results = dask.compute(*results)
 
@@ -481,7 +503,13 @@ def generate_neuroglancer_multires_mesh(
 
 
 def generate_all_neuroglancer_multires_meshes(
-    output_path, num_workers, ids, lods, original_ext, lod_0_box_size=None
+    output_path,
+    num_workers,
+    ids,
+    lods,
+    original_ext,
+    file_sizes,
+    lod_0_box_size=None,
 ):
     """Generate all neuroglancer multiresolution meshes for `ids`. Calls dask
     delayed function `generate_neuroglancer_multires_mesh` for each id.
@@ -495,43 +523,82 @@ def generate_all_neuroglancer_multires_meshes(
         lod_0_box_size (`int`): Box size in lod 0 coordinates
     """
 
-    def get_number_of_subtask_workers(output_path, ids, original_ext, num_workers):
+    def get_number_of_subtask_workers(file_sizes, num_workers):
         # Given a maximum number of workers, this function gets the maximum
         # workers for a given object based on sizes. This is to prevent
         # overloading dask with hundreds of thousands of nested tasks when
         # lots of small objects are present
 
-        total_file_size = 0
-        file_sizes = np.zeros((len(ids),), dtype=np.int)
-        for idx, id in enumerate(ids):
-            current_size = os.stat(
-                f"{output_path}/mesh_lods/s0/{id}{original_ext}"
-            ).st_size
-            total_file_size += current_size
-            file_sizes[idx] = current_size
-
+        total_file_size = np.sum(file_sizes)
         num_workers_per_byte = num_workers / total_file_size
-        num_subtask_workers = np.ceil(file_sizes * num_workers_per_byte).astype(np.int)
+        num_subtask_workers = np.ceil(file_sizes * num_workers_per_byte).astype(int)
         return num_subtask_workers
 
-    num_subtask_workers = get_number_of_subtask_workers(
-        output_path, ids, original_ext, num_workers
-    )
-    results = []
-
+    num_subtask_workers = get_number_of_subtask_workers(file_sizes, num_workers)
+    variable_args_list = []
+    fixed_args_list = [
+        output_path,
+        lods,
+        original_ext,
+        lod_0_box_size,
+    ]
     for idx, id in enumerate(ids):
-        results.append(
-            dask.delayed(generate_neuroglancer_multires_mesh)(
-                output_path,
-                num_subtask_workers[idx],
+        variable_args_list.append(
+            (
                 id,
-                lods,
-                original_ext,
-                lod_0_box_size,
+                num_subtask_workers[idx],
             )
         )
+    dask_util.compute_bag(
+        generate_neuroglancer_multires_mesh,
+        f"{output_path}/variable_args_to_multires.npy",
+        variable_args_list,
+        fixed_args_list,
+        num_workers,
+    )
 
-    dask.compute(*results)
+
+def delete_decimated_mesh_files(
+    output_path,
+    lods,
+    ids,
+    num_workers,
+):
+    def delete_decimated_mesh_file(id, lod, output_path):
+        # id, lod = np.load(id_lod_memmap_path, mmap_mode="r")[memmap_idx]
+        # if not os.path.isfile(f"{output_path}/s{lod}/{id}.ply"):
+        #     raise Exception(
+        #         f"File {output_path}/s{lod}/{id}.ply does not exist. "
+        #         "Please ensure that the mesh exists before deleting."
+        #     )
+        os.remove(f"{output_path}/s{lod}/{id}.ply")
+
+    variable_args_list = []
+    fixed_args_list = [f"{output_path}/mesh_lods"]
+    for current_lod in lods:
+        if current_lod == 0:
+            # assert that s0 is a link to the original mesh
+            if not os.path.islink(f"{output_path}/mesh_lods/s0"):
+                raise ValueError(
+                    f"{output_path}/mesh_lods/s0 is not a link to the original meshes. "
+                    "Please ensure that s0 is a link to the original meshes."
+                )
+            os.system(f"unlink {output_path}/mesh_lods/s0")
+        else:
+            for id in ids:
+                variable_args_list.append(
+                    (
+                        id,
+                        current_lod,
+                    )
+                )
+    dask_util.compute_bag(
+        delete_decimated_mesh_file,
+        f"{output_path}/variable_args_to_delete.npy",
+        variable_args_list,
+        fixed_args_list,
+        num_workers,
+    )
 
 
 def main():
@@ -567,10 +634,26 @@ def main():
             os.chdir(execution_directory)
 
             lods = list(range(num_lods))
-            mesh_files = [f for f in listdir(input_path) if isfile(join(input_path, f))]
-            mesh_ids = [splitext(mesh_file)[0] for mesh_file in mesh_files]
-            mesh_ext = splitext(mesh_files[0])[1]
 
+            mesh_ids = []
+            mesh_ext = None
+
+            # scandir gives you an iterator of DirEntry — far faster than listdir+isfile
+            file_sizes = []
+            with os.scandir(input_path) as it:
+                for entry in it:
+                    if not entry.is_file():
+                        continue
+
+                    name = entry.name
+                    root, ext = os.path.splitext(name)
+
+                    # capture the extension only once
+                    if mesh_ext is None:
+                        mesh_ext = ext
+
+                    file_sizes.append(entry.stat(follow_symlinks=False).st_size)
+                    mesh_ids.append(int(root))
             t0 = time.time()
 
             # Mesh decimation
@@ -586,9 +669,10 @@ def main():
                             mesh_ext,
                             decimation_factor,
                             aggressiveness,
+                            num_workers,
                         )
 
-            # Restart dask to clean up cluster before multires assembly
+            # # Restart dask to clean up cluster before multires assembly
             with dask_util.start_dask(num_workers, "multires creation", logger):
                 # Create multiresolution meshes
                 with io_util.Timing_Messager("Generating multires meshes", logger):
@@ -598,6 +682,7 @@ def main():
                         mesh_ids,
                         lods,
                         mesh_ext,
+                        np.array(file_sizes),
                         lod_0_box_size,
                     )
 
@@ -610,8 +695,17 @@ def main():
                 mesh_util.write_info_file(multires_output_path)
 
             if not skip_decimation and delete_decimated_meshes:
-                with io_util.Timing_Messager("Deleting decimated meshes", logger):
-                    os.system(f"rm -rf {output_path}/mesh_lods")
+                with dask_util.start_dask(
+                    num_workers, "delete decimated meshes", logger
+                ):
+                    with io_util.Timing_Messager("Deleting decimated meshes", logger):
+                        delete_decimated_mesh_files(
+                            output_path,
+                            lods,
+                            mesh_ids,
+                            num_workers,
+                        )
+                        os.system(f"rm -rf {output_path}/mesh_lods")
 
             io_util.print_with_datetime(
                 f"Complete! Elapsed time: {time.time() - t0}", logger
