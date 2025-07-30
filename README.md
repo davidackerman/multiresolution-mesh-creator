@@ -4,43 +4,11 @@
 This repository is meant to be used to create multiresolution meshes in the [neuroglancer precomputed format](https://github.com/google/neuroglancer/blob/master/src/neuroglancer/datasource/precomputed/meshes.md), inspired by [this comment](https://github.com/google/neuroglancer/issues/272#issuecomment-752212014) in order to be used with [neuroglancer](https://github.com/google/neuroglancer). It uses [Dask](https://dask.org/) to parallelize the mesh generation, allowing for progress to be monitored via eg. http://localhost:8787/status.
 
 ## Installation
-1. Clone this repository, and accompanying submodules.
 
-```
-git clone --recursive https://github.com/janelia-cosem/multiresolution-mesh-creator.git
-```
-2. `cd` to repo directory and setup a [conda](https://docs.conda.io/en/latest/) environment using the provided yaml file:
-```
-conda env update -n multiresolution_mesh_creator --file multiresolution_mesh_creator.yml
-```
-3. Activate the environment:
-```
-conda activate multiresolution_mesh_creator
-```
-4. Install `dvidutils` - used for custom draco quantization - as described in the submodule
-```
-cd dvidutils
-mkdir build
-cd build
+Install directly from the GitHub repository using pip:
 
-# Makefiles
-cmake .. \
-    -DCMAKE_BUILD_TYPE=Debug \
-    -DCMAKE_CXX_FLAGS_DEBUG="-g -O0 -DXTENSOR_ENABLE_ASSERT=ON" \
-    -DCMAKE_PREFIX_PATH="${CONDA_PREFIX}" \
-##
-
-make
-make install
-```
-5. Install `pyfqmr-Fast-Quadric-Mesh-Reduction` - used for mesh decimation - as described in the submodule:
-```
-cd pyfqmr-Fast-Quadric-Mesh-Reduction
-python setup.py install
-```
-6. `cd` to this repository directory, and install it via:
-```
-pip install .
+```bash
+pip install git+https://github.com/janelia-cellmap/multiresolution-mesh-creator.git
 ```
 
 You will now be able to run the code via the command line using `create-multiresolution-meshes`.
@@ -95,7 +63,7 @@ If you already have meshes at all the desired scales in the corresponding `s0`, 
 
 If you only have meshes for lod 0, then you must run mesh decimation. Mesh decimation is performed using the lod 0 meshes, reducing the number of faces by a factor of `decimation_factor**lod`. In the example configs, the decimation factor is 4, so the decimation at each lod is `4**lod`.
 
-NOTE: The actual decimation amount is not guaranteed by the decimation factor, but is instead dependent on other [pyfqmr](https://github.com/Kramer84/pyfqmr-Fast-Quadric-Mesh-Reduction) settings as well, such as `aggressiveness`. A lower aggressiveness is more conservative, but means that decimation might not hit its target number of faces. Empirically, `aggressiveness: 10` tends to reach the desired decimation levels, but the default is set to the more conservative value of 7.
+NOTE: The actual decimation amount is not guaranteed by the decimation factor, but is instead dependent on other mesh decimation settings as well, such as `aggressiveness`. A lower aggressiveness is more conservative, but means that decimation might not hit its target number of faces. Empirically, `aggressiveness: 10` tends to reach the desired decimation levels, but the default is set to the more conservative value of 7.
 
 ## Example
 Two meshes are provided in `test_meshes` as an example (a bunny (`1.ply`) and a teapot (`2.ply`)). These are provided at a single, lod 0 scale. To turn these single resolution meshes into neuroglancer formatted multiresolution meshes using 10 local dask workers, you would run the following
